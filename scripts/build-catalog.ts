@@ -3,9 +3,46 @@ import { encodeCatalog, type StarColumns } from '../src/catalog/format';
 
 const MAG_LIMIT = 7.5;
 
+// HYG カタログの CSV はヘッダーが全列ダブルクオート ("id","hip",...) で、
+// bf/gl 等のテキスト列にカンマを含む場合がある。素朴な split(',') では
+// ヘッダーの indexOf が一致せず、カンマ入りフィールドで列がずれるため、
+// クオートを考慮した行パーサーを使う。
+function parseCsvLine(line: string): string[] {
+  const fields: string[] = [];
+  let field = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (line[i + 1] === '"') {
+          field += '"';
+          i++;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        field += c;
+      }
+    } else {
+      if (c === '"') {
+        inQuotes = true;
+      } else if (c === ',') {
+        fields.push(field);
+        field = '';
+      } else {
+        field += c;
+      }
+    }
+  }
+  fields.push(field);
+  return fields;
+}
+
 export function parseHygCsv(text: string): { columns: StarColumns; names: Record<number, string> } {
   const lines = text.split(/\r?\n/).filter((l) => l.length > 0);
-  const header = lines[0]!.split(',');
+  const header = parseCsvLine(lines[0]!);
   const col = (name: string) => {
     const i = header.indexOf(name);
     if (i < 0) throw new Error(`missing column: ${name}`);
@@ -19,7 +56,7 @@ export function parseHygCsv(text: string): { columns: StarColumns; names: Record
   const names: Record<number, string> = {};
 
   for (let r = 1; r < lines.length; r++) {
-    const f = lines[r]!.split(',');
+    const f = parseCsvLine(lines[r]!);
     const px = Number(f[iX]), py = Number(f[iY]), pz = Number(f[iZ]);
     const m = Number(f[iMag]);
     if (!Number.isFinite(px) || !Number.isFinite(py) || !Number.isFinite(pz)) continue;
