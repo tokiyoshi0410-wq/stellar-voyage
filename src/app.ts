@@ -27,8 +27,8 @@ const PLANET_PICK_ANGLE = 0.05; // rad（惑星は見かけ半径が小さいた
 // 0.306 pc/s（フル sublight の pc/s 換算値）× AU_PER_PC ≈ 63,000 AU/s、
 // さらに × BASE_SCALE(6e-5) ≈ 3.8 AU/s に収める。
 const AU_PER_PC = 206264.8;
-const BASE_SCALE = 6e-5;
-const SYSTEM_SPEED_SCALE = BASE_SCALE * AU_PER_PC; // ≈ 12.376
+const BASE_SCALE = 8e-6;
+const SYSTEM_SPEED_SCALE = BASE_SCALE * AU_PER_PC; // ≈ 1.65（体感チューニング済み: フル sublight で数 AU/s）
 
 type AppMode = 'galaxy' | 'system';
 
