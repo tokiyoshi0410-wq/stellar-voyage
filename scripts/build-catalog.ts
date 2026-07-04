@@ -40,7 +40,11 @@ function parseCsvLine(line: string): string[] {
   return fields;
 }
 
-export function parseHygCsv(text: string): { columns: StarColumns; names: Record<number, string> } {
+export interface StarIds { hd: string; hip: string; gl: string; proper: string }
+
+export function parseHygCsv(
+  text: string,
+): { columns: StarColumns; names: Record<number, string>; ids: StarIds[] } {
   const lines = text.split(/\r?\n/).filter((l) => l.length > 0);
   const header = parseCsvLine(lines[0]!);
   const col = (name: string) => {
@@ -50,10 +54,15 @@ export function parseHygCsv(text: string): { columns: StarColumns; names: Record
   };
   const iMag = col('mag'), iAbs = col('absmag'), iCi = col('ci');
   const iX = col('x'), iY = col('y'), iZ = col('z'), iProper = col('proper');
+  // hd/hip/gl are optional columns (not present in every HYG export/fixture):
+  // allow -1 and treat as always-empty rather than throwing.
+  const iHd = header.indexOf('hd'), iHip = header.indexOf('hip'), iGl = header.indexOf('gl');
+  const cell = (f: string[], i: number) => (i >= 0 ? (f[i] ?? '').trim() : '');
 
   const x: number[] = [], y: number[] = [], z: number[] = [];
   const mag: number[] = [], absmag: number[] = [], ci: number[] = [];
   const names: Record<number, string> = {};
+  const ids: StarIds[] = [];
 
   for (let r = 1; r < lines.length; r++) {
     const f = parseCsvLine(lines[r]!);
@@ -68,6 +77,7 @@ export function parseHygCsv(text: string): { columns: StarColumns; names: Record
     ci.push(Number(f[iCi]) || 0);
     const proper = (f[iProper] ?? '').trim();
     if (proper) names[idx] = proper;
+    ids.push({ hd: cell(f, iHd), hip: cell(f, iHip), gl: cell(f, iGl), proper });
   }
 
   const columns: StarColumns = {
@@ -75,7 +85,7 @@ export function parseHygCsv(text: string): { columns: StarColumns; names: Record
     x: Float32Array.from(x), y: Float32Array.from(y), z: Float32Array.from(z),
     mag: Float32Array.from(mag), absmag: Float32Array.from(absmag), ci: Float32Array.from(ci),
   };
-  return { columns, names };
+  return { columns, names, ids };
 }
 
 function main() {

@@ -81,3 +81,19 @@ describe('parseHygCsv (escaped quotes and empty quoted fields)', () => {
     expect(columns.x[1]).toBeCloseTo(-1.1, 3);
   });
 });
+
+describe('parseHygCsv ids', () => {
+  const csv = [
+    'id,hip,hd,gl,proper,mag,absmag,ci,x,y,z',
+    '1,32349,48915,Gl 244A,Sirius,-1.44,1.45,0.0,-1.1,-1.9,1.2',
+    '2,,,,,3.0,5.0,0.6,2.0,3.0,4.0',
+  ].join('\n');
+
+  it('returns ids aligned to output index', () => {
+    const { ids, columns } = parseHygCsv(csv);
+    expect(columns.count).toBe(2);
+    expect(ids.length).toBe(2);
+    expect(ids[0]).toEqual({ hd: '48915', hip: '32349', gl: 'Gl 244A', proper: 'Sirius' });
+    expect(ids[1]).toEqual({ hd: '', hip: '', gl: '', proper: '' });
+  });
+});
