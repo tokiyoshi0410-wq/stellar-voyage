@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { StellarSystem, PlanetType } from './types';
 import { orbitPosition, planetPhase } from './orbit';
+import { makePlanetMaterial } from '../planets/PlanetMaterial';
 
 export function planetTypeColor(type: PlanetType): number {
   switch (type) {
@@ -29,9 +30,10 @@ export class SystemScene {
 
     system.planets.forEach((p, i) => {
       const [x, y, z] = orbitPosition(p.semiMajorAxisAu, planetPhase(system.starIndex, i));
+      const starDir = new THREE.Vector3(-x, -y, -z).normalize();
       const mesh = new THREE.Mesh(
         new THREE.SphereGeometry(planetDisplayRadius(p.radiusEarth), 24, 16),
-        new THREE.MeshStandardMaterial({ color: planetTypeColor(p.type) }),
+        makePlanetMaterial(p.type, system.starIndex + i, starDir),
       );
       mesh.position.set(x, y, z);
       mesh.userData.planetIndex = i;
