@@ -17,3 +17,14 @@
 ## テスト
 
     npm test
+
+## 操作
+
+- マウス: 視点（クリックでポインタロック）
+- W / S: スロットル増減（0 → 0.999c → ワープ）
+- クリック: 正面の星を選択して情報表示
+
+## クレジット
+
+- HYG Database v3 — © astronexus, HYG Database contributors, CC BY-SA 4.0
+- 系外惑星データ（M2 以降）— NASA Exoplanet Archive
