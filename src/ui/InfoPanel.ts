@@ -12,7 +12,7 @@ export class InfoPanel {
     root.appendChild(this.el);
   }
 
-  show(info: StarInfo): void {
+  show(info: StarInfo, onEnterSystem?: () => void): void {
     const real = info.isReal ? '<span style="color:#7fd1ff">実在</span>' : '生成';
     this.el.innerHTML =
       `<div style="font-size:16px;font-weight:600;margin-bottom:6px">${info.title} ${real}</div>` +
@@ -21,6 +21,14 @@ export class InfoPanel {
       `光度: 太陽の ${info.luminositySun.toPrecision(3)} 倍<br>` +
       `距離: ${Math.round(info.distanceLy).toLocaleString('ja-JP')} 光年`;
     this.el.style.display = 'block';
+    if (onEnterSystem) {
+      const btn = document.createElement('button');
+      btn.textContent = 'この星系へ';
+      btn.style.cssText = 'margin-top:10px;width:100%;padding:6px;cursor:pointer;' +
+        'background:#1c3a63;color:#eaf2ff;border:1px solid #3a6ea5;border-radius:6px;font:13px system-ui;';
+      btn.onclick = onEnterSystem;
+      this.el.appendChild(btn);
+    }
   }
 
   hide(): void {
