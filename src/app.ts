@@ -15,6 +15,9 @@ import { SystemScene } from './system/SystemScene';
 
 const LOOK_SENSITIVITY = 0.0025;
 const PICK_ANGLE = 0.01; // rad
+// system ビューは AU スケール。共有 ship.update() はパーセク/ワープ換算のままなので、
+// system モードでは dt をこの係数で縮小し、フル throttle（ワープ域）でも数 AU/s に収める。
+const SYSTEM_SPEED_SCALE = 5e-10;
 
 type AppMode = 'galaxy' | 'system';
 
@@ -69,6 +72,8 @@ export async function startApp(root: HTMLElement): Promise<void> {
   const yawPitch = { yaw: 0, pitch: 0 };
 
   function enterSystem(index: number): void {
+    if (mode !== 'galaxy') return; // 二重クリックによる SystemScene リーク防止
+
     // galaxy のカメラ位置・向きを退避
     savedPos = [origin.position[0], origin.position[1], origin.position[2]];
     savedQuat = ship.orientation.clone();
@@ -84,9 +89,14 @@ export async function startApp(root: HTMLElement): Promise<void> {
     yawPitch.yaw = 0;
     yawPitch.pitch = 0;
     engine.camera.position.set(0, 0, 8);
+    // galaxy 側で溜まった未消費のポインタ移動量を破棄（次フレームで yaw/pitch を巻き戻さないため）
+    input.consumePointerDelta();
+    // system 突入時に galaxy の throttle を持ち越さない（星まで加速したまま突入すると即座に飛び出す）
+    ship.throttle = 0;
 
     systemHud.show(system.starName, exitSystem);
     panel.hide();
+    hud.hide();
     mode = 'system';
   }
 
@@ -113,6 +123,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
     engine.camera.position.set(0, 0, 0);
 
     systemHud.hide();
+    hud.show();
     mode = 'galaxy';
   }
 
@@ -142,7 +153,8 @@ export async function startApp(root: HTMLElement): Promise<void> {
     ship.orientation.setFromEuler(euler);
 
     ship.throttle = input.applyThrottle(ship.throttle, dt);
-    ship.update(dt);
+    // system モードは AU スケールなので dt を縮小し、galaxy（M1 と同一の dt）とは分離する
+    ship.update(mode === 'galaxy' ? dt : dt * SYSTEM_SPEED_SCALE);
 
     engine.camera.quaternion.copy(ship.orientation);
 

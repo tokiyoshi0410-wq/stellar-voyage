@@ -18,4 +18,12 @@ export class HUD {
       `モード: ${mode}<br>` +
       `目標: ${target ?? '—'}`;
   }
+
+  hide(): void {
+    this.el.style.display = 'none';
+  }
+
+  show(): void {
+    this.el.style.display = 'block';
+  }
 }
