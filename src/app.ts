@@ -15,6 +15,8 @@ import { SystemScene } from './system/SystemScene';
 import { NORMAL_BAND } from './flight/ShipController';
 import { pickPlanet } from './system/planetPick';
 import { PlanetPanel } from './ui/PlanetPanel';
+import { loadExoplanets } from './catalog/exoplanets';
+import type { Planet } from './system/types';
 
 const LOOK_SENSITIVITY = 0.0025;
 const PICK_ANGLE = 0.01; // rad
@@ -74,6 +76,8 @@ export async function startApp(root: HTMLElement): Promise<void> {
   field = new StarField(catalog.columns);
   engine.scene.add(field.object);
 
+  const exoplanets: Record<number, Planet[]> = await loadExoplanets('/data/exoplanets.json');
+
   window.addEventListener('resize', () => engine.resize(window.innerWidth, window.innerHeight));
 
   // --- mode 状態 -------------------------------------------------------
@@ -90,7 +94,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
     savedPos = [origin.position[0], origin.position[1], origin.position[2]];
     savedQuat = ship.orientation.clone();
 
-    const system = buildStellarSystem(catalog.columns, index, catalog.nameOf(index));
+    const system = buildStellarSystem(catalog.columns, index, catalog.nameOf(index), exoplanets);
     systemScene = new SystemScene(system);
     engine.scene.remove(field.object);
     engine.scene.add(systemScene.root);

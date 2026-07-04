@@ -27,4 +27,4 @@
 ## クレジット
 
 - HYG Database（astronexus/HYG-Database, CURRENT / v4.1）— © astronexus, HYG Database contributors, CC BY-SA 4.0
-- 系外惑星データ（M2 以降）— NASA Exoplanet Archive
+- 系外惑星データ — NASA Exoplanet Archive（自由利用可、出典明記）
