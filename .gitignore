@@ -1,5 +1,7 @@
 node_modules
 dist
 data/hygdata_v3.csv
+data/nasa-exoplanets.csv
 public/data/hyg.bin
 public/data/hyg-names.json
+public/data/exoplanets.json
