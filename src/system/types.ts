@@ -10,6 +10,7 @@ export interface Planet {
   inHabitableZone: boolean;
   isReal: boolean;
   estimated: boolean;
+  hasRing?: boolean;
 }
 
 export interface StellarSystem {
