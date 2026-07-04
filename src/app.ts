@@ -13,13 +13,22 @@ import { describeStar } from './ui/format';
 import { buildStellarSystem } from './system/StellarSystem';
 import { SystemScene } from './system/SystemScene';
 import { NORMAL_BAND } from './flight/ShipController';
+import { pickPlanet } from './system/planetPick';
+import { PlanetPanel } from './ui/PlanetPanel';
 
 const LOOK_SENSITIVITY = 0.0025;
 const PICK_ANGLE = 0.01; // rad
-// system ビューは AU スケール。共有 ship.update() はパーセク/ワープ換算のままなので、
-// system モードでは dt をこの係数で縮小し、sublight 域（throttle ≤ NORMAL_BAND）で
-// 63,000 AU/s（フル sublight の pc/s 換算値）× SCALE ≈ 3.8 AU/s に収める。
-const SYSTEM_SPEED_SCALE = 6e-5;
+const PLANET_PICK_ANGLE = 0.05; // rad（惑星は見かけ半径が小さいため星より広めの許容角）
+// system ビューは AU スケール。共有 ship.update() は「pc 相当」の変位を計算し、
+// それをそのまま origin.position（system モードでは AU 単位）へ加算するため、
+// pc → AU の単位変換（1 pc ≈ 206,264.8 AU）を必ず係数へ折り込む必要がある
+// （これを忘れると変位が約 20 万分の 1 になり、体感上ゼロになる＝過去の P0 バグ）。
+// sublight 域（throttle ≤ NORMAL_BAND, speedC≈0.999）で
+// 0.306 pc/s（フル sublight の pc/s 換算値）× AU_PER_PC ≈ 63,000 AU/s、
+// さらに × BASE_SCALE(6e-5) ≈ 3.8 AU/s に収める。
+const AU_PER_PC = 206264.8;
+const BASE_SCALE = 6e-5;
+const SYSTEM_SPEED_SCALE = BASE_SCALE * AU_PER_PC; // ≈ 12.376
 
 type AppMode = 'galaxy' | 'system';
 
@@ -46,6 +55,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
   const hud = new HUD(root);
   const panel = new InfoPanel(root);
   const systemHud = new SystemHud(root);
+  const planetPanel = new PlanetPanel(root);
 
   engine.renderer.domElement.tabIndex = 0;
   engine.renderer.domElement.style.outline = 'none';
@@ -99,6 +109,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
     systemHud.show(system.starName, exitSystem);
     panel.hide();
     hud.hide();
+    planetPanel.hide();
     mode = 'system';
   }
 
@@ -126,19 +137,32 @@ export async function startApp(root: HTMLElement): Promise<void> {
 
     systemHud.hide();
     hud.show();
+    planetPanel.hide();
     mode = 'galaxy';
   }
 
-  // クリックで最近傍の星を選択（galaxy のみ。system の惑星選択は Task 7）
+  // クリックで最近傍の星（galaxy）または惑星（system）を選択
   engine.renderer.domElement.addEventListener('pointerdown', () => {
-    if (mode !== 'galaxy') return;
     const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(ship.orientation);
-    const idx = pickStar(
-      [origin.position[0], origin.position[1], origin.position[2]],
-      [dir.x, dir.y, dir.z], catalog.columns, PICK_ANGLE,
-    );
-    if (idx != null) {
-      panel.show(describeStar(catalog.columns, idx, catalog.nameOf(idx)), () => enterSystem(idx));
+    if (mode === 'galaxy') {
+      const idx = pickStar(
+        [origin.position[0], origin.position[1], origin.position[2]],
+        [dir.x, dir.y, dir.z], catalog.columns, PICK_ANGLE,
+      );
+      if (idx != null) {
+        panel.show(describeStar(catalog.columns, idx, catalog.nameOf(idx)), () => enterSystem(idx));
+      }
+    } else if (systemScene) {
+      const currentSystem = systemScene.system;
+      const pIdx = pickPlanet(
+        [origin.position[0], origin.position[1], origin.position[2]],
+        [dir.x, dir.y, dir.z], currentSystem, PLANET_PICK_ANGLE,
+      );
+      if (pIdx != null) {
+        const planet = currentSystem.planets[pIdx]!;
+        planetPanel.show(planet);
+        systemHud.setTarget(planet.name);
+      }
     }
   });
 
