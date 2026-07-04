@@ -23,12 +23,12 @@ const PLANET_PICK_ANGLE = 0.05; // rad（惑星は見かけ半径が小さいた
 // それをそのまま origin.position（system モードでは AU 単位）へ加算するため、
 // pc → AU の単位変換（1 pc ≈ 206,264.8 AU）を必ず係数へ折り込む必要がある
 // （これを忘れると変位が約 20 万分の 1 になり、体感上ゼロになる＝過去の P0 バグ）。
-// sublight 域（throttle ≤ NORMAL_BAND, speedC≈0.999）で
-// 0.306 pc/s（フル sublight の pc/s 換算値）× AU_PER_PC ≈ 63,000 AU/s、
-// さらに × BASE_SCALE(6e-5) ≈ 3.8 AU/s に収める。
+// BASE_SCALE は体感チューニング用の定数で、実機（Playwright E2E）で
+// 「恒星まで数秒で段階的に接近し、オーバーシュートしない」よう調整した値。
+// throttle は system モードで NORMAL_BAND 以下（sublight）にクランプ済み。
 const AU_PER_PC = 206264.8;
-const BASE_SCALE = 8e-6;
-const SYSTEM_SPEED_SCALE = BASE_SCALE * AU_PER_PC; // ≈ 1.65（体感チューニング済み: フル sublight で数 AU/s）
+const BASE_SCALE = 8e-6; // E2E で調整（6e-5 は速すぎて系を約 1 秒で通過した）
+const SYSTEM_SPEED_SCALE = BASE_SCALE * AU_PER_PC; // ≈ 1.65
 
 type AppMode = 'galaxy' | 'system';
 
