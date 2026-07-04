@@ -11,8 +11,8 @@
 
 ## データ
 
-- 星カタログ: HYG Database v3（astronexus/HYG-Database）。`data/hygdata_v3.csv` に配置。
-  ライセンス CC BY-SA 4.0。© astronexus, HYG Database contributors.
+- 星カタログ: HYG Database（astronexus/HYG-Database, CURRENT / v4.1）。`data/hygdata_v3.csv` に配置。
+  ライセンス・クレジットは下記クレジット参照。
 
 ## テスト
 
@@ -26,5 +26,5 @@
 
 ## クレジット
 
-- HYG Database v3 — © astronexus, HYG Database contributors, CC BY-SA 4.0
+- HYG Database（astronexus/HYG-Database, CURRENT / v4.1）— © astronexus, HYG Database contributors, CC BY-SA 4.0
 - 系外惑星データ（M2 以降）— NASA Exoplanet Archive

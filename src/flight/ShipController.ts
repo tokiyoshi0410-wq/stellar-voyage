@@ -4,7 +4,7 @@ import type { FloatingOrigin } from '../engine/FloatingOrigin';
 export const C_PC_PER_S = 9.7156e-9;   // 光速 [pc/s]（実時間）
 export const TIME_COMPRESSION = 3.156e7; // 実 1 秒 ≒ 1 年ぶんの移動
 export const NORMAL_BAND = 0.7;         // 通常航行に割り当てる throttle 割合
-export const MAX_WARP_C = 3.156e10;     // ワープ上限（約 1000 ly/s）
+export const MAX_WARP_C = 3.156e10;     // ワープ上限 ≈ 3.16e10 ×c ≈ 3.16e10 ly/s（毎秒約316億光年）。M3 で体感カーブ再調整の余地あり
 
 export class ShipController {
   throttle = 0;

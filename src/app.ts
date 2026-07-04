@@ -13,7 +13,7 @@ import { describeStar } from './ui/format';
 const LOOK_SENSITIVITY = 0.0025;
 const PICK_ANGLE = 0.01; // rad
 
-function showFatal(root: HTMLElement, message: string): void {
+export function showFatal(root: HTMLElement, message: string): void {
   const div = document.createElement('div');
   div.style.cssText =
     'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;' +

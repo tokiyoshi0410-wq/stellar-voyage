@@ -7,7 +7,7 @@ export function pickStar(
   maxAngleRad: number,
 ): number | null {
   const [cx, cy, cz] = cameraPos;
-  let rlen = Math.hypot(rayDir[0], rayDir[1], rayDir[2]) || 1;
+  const rlen = Math.hypot(rayDir[0], rayDir[1], rayDir[2]) || 1;
   const rx = rayDir[0] / rlen, ry = rayDir[1] / rlen, rz = rayDir[2] / rlen;
   const cosMax = Math.cos(maxAngleRad);
   let bestDot = cosMax;
