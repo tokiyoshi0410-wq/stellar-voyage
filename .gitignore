@@ -1,0 +1,5 @@
+node_modules
+dist
+data/hygdata_v3.csv
+public/data/hyg.bin
+public/data/hyg-names.json
