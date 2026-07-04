@@ -12,12 +12,14 @@ import { SystemHud } from './ui/SystemHud';
 import { describeStar } from './ui/format';
 import { buildStellarSystem } from './system/StellarSystem';
 import { SystemScene } from './system/SystemScene';
+import { NORMAL_BAND } from './flight/ShipController';
 
 const LOOK_SENSITIVITY = 0.0025;
 const PICK_ANGLE = 0.01; // rad
 // system ビューは AU スケール。共有 ship.update() はパーセク/ワープ換算のままなので、
-// system モードでは dt をこの係数で縮小し、フル throttle（ワープ域）でも数 AU/s に収める。
-const SYSTEM_SPEED_SCALE = 5e-10;
+// system モードでは dt をこの係数で縮小し、sublight 域（throttle ≤ NORMAL_BAND）で
+// 63,000 AU/s（フル sublight の pc/s 換算値）× SCALE ≈ 3.8 AU/s に収める。
+const SYSTEM_SPEED_SCALE = 6e-5;
 
 type AppMode = 'galaxy' | 'system';
 
@@ -153,8 +155,15 @@ export async function startApp(root: HTMLElement): Promise<void> {
     ship.orientation.setFromEuler(euler);
 
     ship.throttle = input.applyThrottle(ship.throttle, dt);
-    // system モードは AU スケールなので dt を縮小し、galaxy（M1 と同一の dt）とは分離する
-    ship.update(mode === 'galaxy' ? dt : dt * SYSTEM_SPEED_SCALE);
+
+    if (mode === 'galaxy') {
+      ship.update(dt);
+    } else {
+      // system ビューはワープ域を許容しない（AU スケールでは即座に飛び出してしまう）。
+      // throttle を sublight 域（NORMAL_BAND 以下）に丸めてから縮小 dt で更新する。
+      ship.throttle = Math.min(ship.throttle, NORMAL_BAND);
+      ship.update(dt * SYSTEM_SPEED_SCALE);
+    }
 
     engine.camera.quaternion.copy(ship.orientation);
 
