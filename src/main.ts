@@ -1,2 +1,4 @@
-const app = document.getElementById('app');
-if (app) app.textContent = 'Stellar Voyage — 起動準備中';
+import { startApp } from './app';
+
+const root = document.getElementById('app');
+if (root) startApp(root);
