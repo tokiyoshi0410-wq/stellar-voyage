@@ -3,6 +3,7 @@ import { bvToTemperature } from '../astro/color';
 import { temperatureToSpectralClass, absMagToLuminosity } from '../astro/spectral';
 import { generatePlanets } from './planetGen';
 import { inHabitableZone } from './habitableZone';
+import { getSolarSystem } from './solarSystem';
 import type { Planet, StellarSystem } from './types';
 
 export function buildStellarSystem(
@@ -17,9 +18,13 @@ export function buildStellarSystem(
   const real = exoplanets?.[index];
   // 実データはビルド時 inHabitableZone: false 固定で書き出されているため、
   // 恒星の光度と軌道長半径からここで実際のハビタブルゾーン判定を上書きする。
-  const planets = real && real.length > 0
-    ? real.map((p) => ({ ...p, inHabitableZone: inHabitableZone(p.semiMajorAxisAu, luminositySun) }))
-    : generatePlanets(index, spectralClass, luminositySun);
+  // index 0 (太陽) は実データ・手続き生成より優先して太陽系データを使う
+  // (太陽系側は L=1 で判定済みのため再計算不要)。
+  const planets = index === 0
+    ? getSolarSystem()
+    : real && real.length > 0
+      ? real.map((p) => ({ ...p, inHabitableZone: inHabitableZone(p.semiMajorAxisAu, luminositySun) }))
+      : generatePlanets(index, spectralClass, luminositySun);
   return {
     starIndex: index,
     starName: name ?? `HYG #${index}`,
