@@ -6,7 +6,9 @@
 
     npm install
     # HYG カタログ CSV を data/ に置く（下記）
-    npm run build:catalog   # public/data/hyg.bin を生成
+    npm run build:catalog     # public/data/hyg.bin を生成
+    npm run build:exoplanets  # public/data/exoplanets.json を生成（data/nasa-exoplanets.csv が必要。
+                               # 未配置の場合、系外惑星は生成せず手続き生成の惑星にフォールバックする）
     npm run dev
 
 ## データ
@@ -23,6 +25,7 @@
 - マウス: 視点（クリックでポインタロック）
 - W / S: スロットル増減（0 → 0.999c → ワープ）
 - クリック: 正面の星を選択して情報表示
+- 「この星系へ」「系を出る」ボタンはクリックするために Esc でポインタロックを解除する必要がある
 
 ## クレジット
 

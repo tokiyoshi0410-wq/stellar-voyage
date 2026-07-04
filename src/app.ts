@@ -21,13 +21,14 @@ import type { Planet } from './system/types';
 const LOOK_SENSITIVITY = 0.0025;
 const PICK_ANGLE = 0.01; // rad
 const PLANET_PICK_ANGLE = 0.05; // rad（惑星は見かけ半径が小さいため星より広めの許容角）
-// system ビューは AU スケール。共有 ship.update() は「pc 相当」の変位を計算し、
-// それをそのまま origin.position（system モードでは AU 単位）へ加算するため、
-// pc → AU の単位変換（1 pc ≈ 206,264.8 AU）を必ず係数へ折り込む必要がある
-// （これを忘れると変位が約 20 万分の 1 になり、体感上ゼロになる＝過去の P0 バグ）。
-// BASE_SCALE は体感チューニング用の定数で、実機（Playwright E2E）で
-// 「恒星まで数秒で段階的に接近し、オーバーシュートしない」よう調整した値。
-// throttle は system モードで NORMAL_BAND 以下（sublight）にクランプ済み。
+// system ビュー（AU スケール）の移動速度は物理単位からの厳密な導出ではなく、
+// Playwright E2E で「恒星まで数秒で段階的に接近し、オーバーシュートしない」
+// ことを基準に実機チューニングした経験値。ship.update() は galaxy 用に
+// TIME_COMPRESSION で圧縮されたゲーム単位の変位を返すだけで、pc/AU の物理的な
+// 単位変換をしているわけではない。AU_PER_PC は「AU スケールで扱いやすい大きさに
+// 変位を持ち上げるための数値上の便宜的係数」であり、BASE_SCALE と掛け合わせた
+// SYSTEM_SPEED_SCALE も同様に体感チューニング値。throttle は system モードでは
+// NORMAL_BAND 以下（sublight）にクランプ済み。
 const AU_PER_PC = 206264.8;
 const BASE_SCALE = 8e-6; // E2E で調整（6e-5 は速すぎて系を約 1 秒で通過した）
 const SYSTEM_SPEED_SCALE = BASE_SCALE * AU_PER_PC; // ≈ 1.65
@@ -85,14 +86,16 @@ export async function startApp(root: HTMLElement): Promise<void> {
   let systemScene: SystemScene | null = null;
   let savedPos: [number, number, number] | null = null;
   let savedQuat: THREE.Quaternion | null = null;
+  let savedThrottle: number | null = null;
   const yawPitch = { yaw: 0, pitch: 0 };
 
   function enterSystem(index: number): void {
     if (mode !== 'galaxy') return; // 二重クリックによる SystemScene リーク防止
 
-    // galaxy のカメラ位置・向きを退避
+    // galaxy のカメラ位置・向き・throttle を退避
     savedPos = [origin.position[0], origin.position[1], origin.position[2]];
     savedQuat = ship.orientation.clone();
+    savedThrottle = ship.throttle;
 
     const system = buildStellarSystem(catalog.columns, index, catalog.nameOf(index), exoplanets);
     systemScene = new SystemScene(system);
@@ -134,8 +137,12 @@ export async function startApp(root: HTMLElement): Promise<void> {
       yawPitch.yaw = euler.y;
       yawPitch.pitch = euler.x;
     }
+    if (savedThrottle != null) {
+      ship.throttle = savedThrottle;
+    }
     savedPos = null;
     savedQuat = null;
+    savedThrottle = null;
     // galaxy は floating origin（カメラはワールド原点固定）に戻す
     engine.camera.position.set(0, 0, 0);
 

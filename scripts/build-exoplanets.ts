@@ -42,7 +42,7 @@ export function joinExoplanets(ids: StarIds[], nasaRows: NasaRow[]): Record<numb
       radiusEarth,
       massEarth,
       eqTempK: r.eqTempK,
-      inHabitableZone: false, // 実データでは軌道と恒星光度から後段で判定してもよいが M2a では false 固定でも可
+      inHabitableZone: false, // プレースホルダー。実際の判定は buildStellarSystem が実行時に光度・軌道から再計算して上書きする
       isReal: true,
       estimated,
     };

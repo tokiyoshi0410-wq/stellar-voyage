@@ -6,8 +6,11 @@ varying vec3 vWorldPos;
 varying vec3 vPos;
 
 // 簡易ハッシュノイズ
+// 惑星ごとの見た目のばらつきは main() 内で fbm の入力座標に加算する
+// seedOffset が担っており、uSeed は整数のため fract(p + uSeed) は
+// fract(p) と等しく（ここでは）効果を持たない。
 float hash(vec3 p) {
-  p = fract(p * 0.3183099 + uSeed);
+  p = fract(p * 0.3183099);
   p += dot(p, p.yzx + 19.19);
   return fract((p.x + p.y) * p.z);
 }
