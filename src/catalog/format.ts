@@ -30,10 +30,19 @@ export function encodeCatalog(cols: StarColumns): ArrayBuffer {
 }
 
 export function decodeCatalog(buffer: ArrayBuffer): StarColumns {
+  if (buffer.byteLength < HEADER_BYTES) {
+    throw new Error(
+      `truncated catalog: buffer smaller than ${HEADER_BYTES}-byte header (got ${buffer.byteLength})`
+    );
+  }
   const view = new DataView(buffer);
   if (view.getUint32(0, true) !== MAGIC) throw new Error('bad magic in catalog');
   if (view.getUint32(4, true) !== VERSION) throw new Error('unsupported catalog version');
   const count = view.getUint32(8, true);
+  const expectedBytes = HEADER_BYTES + COLUMNS.length * count * 4;
+  if (buffer.byteLength < expectedBytes) {
+    throw new Error(`truncated catalog: expected ${expectedBytes} bytes, got ${buffer.byteLength}`);
+  }
   const out: Record<string, unknown> = { count };
   let offset = HEADER_BYTES;
   for (const name of COLUMNS) {

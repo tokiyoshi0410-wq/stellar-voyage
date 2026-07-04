@@ -34,4 +34,15 @@ describe('catalog format', () => {
     const buf = new ArrayBuffer(12);
     expect(() => decodeCatalog(buf)).toThrow(/magic/i);
   });
+
+  it('rejects a buffer smaller than the header', () => {
+    const buf = new ArrayBuffer(4);
+    expect(() => decodeCatalog(buf)).toThrow(/truncated/i);
+  });
+
+  it('rejects a valid header with a truncated payload', () => {
+    const full = encodeCatalog(sample());
+    const truncated = full.slice(0, 12); // header only, no column payload
+    expect(() => decodeCatalog(truncated)).toThrow(/truncated/i);
+  });
 });
