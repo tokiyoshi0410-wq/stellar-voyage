@@ -1,6 +1,6 @@
 import type { Planet, PlanetType } from '../system/types';
 import type { PlanetFacts } from '../system/solarFacts';
-import { formatManKm, formatLightTravel, formatShinkansenTravel } from '../system/solarFacts';
+import { formatManKm, formatLightTravel, formatShinkansenTravel, formatOrbitalKmH } from '../system/solarFacts';
 
 const TYPE_LABEL: Record<PlanetType, string> = {
   rock: '岩石惑星', ocean: '海洋惑星', gas: 'ガス惑星', ice: '氷惑星',
@@ -19,8 +19,8 @@ export function describePlanet(p: Planet, facts?: PlanetFacts, closestAu?: numbe
     temp +
     `${hz}`;
   if (facts) {
-    s += `\n公転: ${facts.orbitalSpeedKmS} km/s ・ 周期 ${facts.orbitalPeriodYr} 年` +
-      `\n自転: 赤道 ${facts.rotationSpeedKmH} km/h${facts.retrograde ? '(逆回転)' : ''}`;
+    s += `\n公転: ${formatOrbitalKmH(facts.orbitalSpeedKmS)} ・ 周期 ${facts.orbitalPeriodYr} 年` +
+      `\n自転: 赤道 ${facts.rotationSpeedKmH.toLocaleString('en-US')} km/h${facts.retrograde ? '(逆回転)' : ''}`;
     if (closestAu != null && closestAu > 0) {
       s += `\n地球から最接近: ${formatManKm(closestAu)}（約${closestAu.toPrecision(2)} AU）` +
         `\n　光の速度で ${formatLightTravel(closestAu)}` +

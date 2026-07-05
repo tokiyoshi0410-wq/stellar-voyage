@@ -63,3 +63,8 @@ export function formatShinkansenTravel(au: number): string {
   if (years >= 1) return `約${Math.round(years)}年`;
   return `約${Math.round(hours / 24)}日`;
 }
+
+/** 公転速度(km/s) を「N,NNN km/h」（カンマ区切り）で */
+export function formatOrbitalKmH(orbitalSpeedKmS: number): string {
+  return `${Math.round(orbitalSpeedKmS * 3600).toLocaleString('en-US')} km/h`;
+}

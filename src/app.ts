@@ -29,7 +29,7 @@ import { scaleBarFor } from './edu/scaleBar';
 import { ScaleBar } from './ui/ScaleBar';
 import { LocalGroup } from './galaxy/LocalGroup';
 import { localGroupFade } from './nav/localGroupFade';
-import { PLANET_FACTS, SUN_FACTS, earthClosestApproachAu } from './system/solarFacts';
+import { PLANET_FACTS, SUN_FACTS, earthClosestApproachAu, formatOrbitalKmH } from './system/solarFacts';
 
 const DRAG_SENS = 0.005;
 const ZOOM_SENS = 0.0015;
@@ -262,10 +262,9 @@ export async function startApp(root: HTMLElement): Promise<void> {
         const [px, py, pz] = orbitPosition(p.semiMajorAxisAu, phase);
         if (isSolar) {
           const f = PLANET_FACTS[i]!;
-          const orbKmh = Math.round(f.orbitalSpeedKmS * 3600).toLocaleString('en-US');
           const rotKmh = f.rotationSpeedKmH.toLocaleString('en-US');
           labelItems.push({
-            text: `${p.name}  ${formatAuDistance(p.semiMajorAxisAu)}\n公転 ${orbKmh} km/h\n自転 ${rotKmh} km/h${f.retrograde ? '(逆)' : ''}`,
+            text: `${p.name}  ${formatAuDistance(p.semiMajorAxisAu)}\n公転 ${formatOrbitalKmH(f.orbitalSpeedKmS)}\n自転 ${rotKmh} km/h${f.retrograde ? '(逆)' : ''}`,
             worldPos: [px, py, pz],
           });
         } else {

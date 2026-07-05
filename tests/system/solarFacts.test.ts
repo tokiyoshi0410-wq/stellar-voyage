@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   PLANET_FACTS, SUN_FACTS, earthClosestApproachAu,
-  formatManKm, formatLightTravel, formatShinkansenTravel,
+  formatManKm, formatLightTravel, formatShinkansenTravel, formatOrbitalKmH,
 } from '../../src/system/solarFacts';
 import { getSolarSystem } from '../../src/system/solarSystem';
 
@@ -37,5 +37,9 @@ describe('solarFacts', () => {
   it('SUN_FACTS carries galactic data', () => {
     expect(SUN_FACTS.galacticSpeedKmS).toBe(220);
     expect(SUN_FACTS.galacticCenterLy).toBe(26000);
+  });
+  it('formatOrbitalKmH converts km/s to comma-grouped km/h', () => {
+    expect(formatOrbitalKmH(29.8)).toBe('107,280 km/h');
+    expect(formatOrbitalKmH(47.4)).toBe('170,640 km/h');
   });
 });

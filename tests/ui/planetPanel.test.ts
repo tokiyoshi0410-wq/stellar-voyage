@@ -16,7 +16,7 @@ describe('describePlanet', () => {
   });
   it('adds orbital/rotation/distance/travel lines with facts', () => {
     const s = describePlanet(mars, PLANET_FACTS[3], earthClosestApproachAu(1.52));
-    expect(s).toMatch(/公転: 24.1 km\/s/);
+    expect(s).toMatch(/公転: 86,760 km\/h/);
     expect(s).toMatch(/自転: 赤道 866 km\/h/);
     expect(s).toMatch(/地球から最接近/);
     expect(s).toMatch(/新幹線/);
