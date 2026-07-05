@@ -1,3 +1,6 @@
+import * as THREE from 'three';
+import vert from './galaxy.vert.glsl?raw';
+import frag from './galaxy.frag.glsl?raw';
 import { mulberry32 } from '../system/rng';
 import type { GalaxyParams } from './galaxyParams';
 
@@ -49,4 +52,37 @@ export function buildGalaxyGeometry(p: GalaxyParams, seed: number): {
     sizes[i] = s;
   }
   return { positions, colors, sizes };
+}
+
+export class GalaxyDisk {
+  readonly object: THREE.Points;
+  private readonly material: THREE.ShaderMaterial;
+
+  constructor(p: GalaxyParams, seed: number) {
+    const { positions, colors, sizes } = buildGalaxyGeometry(p, seed);
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+    this.material = new THREE.ShaderMaterial({
+      uniforms: { uPixelScale: { value: 400.0 }, uOpacity: { value: 1.0 } },
+      vertexShader: vert,
+      fragmentShader: frag,
+      vertexColors: true,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    this.object = new THREE.Points(geometry, this.material);
+    this.object.frustumCulled = false;
+  }
+
+  setOpacity(o: number): void {
+    this.material.uniforms.uOpacity!.value = o;
+  }
+
+  dispose(): void {
+    this.object.geometry.dispose();
+    this.material.dispose();
+  }
 }

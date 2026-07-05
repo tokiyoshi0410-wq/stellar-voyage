@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { buildGalaxyGeometry } from '../../src/galaxy/GalaxyDisk';
+import * as THREE from 'three';
+import { buildGalaxyGeometry, GalaxyDisk } from '../../src/galaxy/GalaxyDisk';
 import { MILKY_WAY } from '../../src/galaxy/galaxyParams';
 
 describe('buildGalaxyGeometry', () => {
@@ -34,5 +35,20 @@ describe('buildGalaxyGeometry', () => {
       const x = g.positions[i * 3]!, y = g.positions[i * 3 + 1]!, z = g.positions[i * 3 + 2]!;
       expect(Math.hypot(x, y, z)).toBeLessThanOrEqual(MILKY_WAY.radiusAu * 0.15 + 1);
     }
+  });
+});
+
+describe('GalaxyDisk', () => {
+  it('exposes a Points object with count vertices', () => {
+    const d = new GalaxyDisk(MILKY_WAY, 1);
+    expect(d.object.type).toBe('Points');
+    expect(d.object.geometry.getAttribute('position').count).toBe(MILKY_WAY.count);
+    d.dispose();
+  });
+  it('setOpacity updates the uOpacity uniform', () => {
+    const d = new GalaxyDisk(MILKY_WAY, 1);
+    d.setOpacity(0.3);
+    expect((d.object.material as THREE.ShaderMaterial).uniforms.uOpacity!.value).toBe(0.3);
+    d.dispose();
   });
 });
