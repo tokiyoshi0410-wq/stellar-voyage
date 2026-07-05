@@ -103,7 +103,7 @@ describe('SystemScene galactic-path markers', () => {
 });
 
 describe('SystemScene travel (whole system travels the galactic path)', () => {
-  it('solar: update(t) travels the whole system (sun + planet world pos move), markers stay fixed', () => {
+  it('solar: setTravelOffset moves the whole system (sun + planet world pos), markers stay fixed', () => {
     const sys: StellarSystem = {
       starIndex: 0, starName: '太陽', spectralClass: 'G', temperatureK: 5800, luminositySun: 1,
       planets: [{
@@ -115,11 +115,11 @@ describe('SystemScene travel (whole system travels the galactic path)', () => {
     const sun0 = scene.sunWorldPos();
     const p0 = scene.planetWorldPos(0);
     const marker0 = scene.galMarkers[0]!.position.clone();
-    scene.update(3);
-    const sun3 = scene.sunWorldPos();
-    const p3 = scene.planetWorldPos(0);
-    expect(Math.hypot(sun3[0]-sun0[0], sun3[1]-sun0[1], sun3[2]-sun0[2])).toBeGreaterThan(0);
-    expect(Math.hypot(p3[0]-p0[0], p3[1]-p0[1], p3[2]-p0[2])).toBeGreaterThan(0);
+    scene.setTravelOffset(7);
+    const sun1 = scene.sunWorldPos();
+    const p1 = scene.planetWorldPos(0);
+    expect(Math.hypot(sun1[0]-sun0[0], sun1[1]-sun0[1], sun1[2]-sun0[2])).toBeGreaterThan(0);
+    expect(Math.hypot(p1[0]-p0[0], p1[1]-p0[1], p1[2]-p0[2])).toBeGreaterThan(0);
     expect(scene.galMarkers[0]!.position.distanceTo(marker0)).toBe(0);
     scene.dispose();
   });

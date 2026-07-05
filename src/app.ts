@@ -30,6 +30,7 @@ import { ScaleBar } from './ui/ScaleBar';
 import { LocalGroup } from './galaxy/LocalGroup';
 import { localGroupFade } from './nav/localGroupFade';
 import { PLANET_FACTS, SUN_FACTS, earthClosestApproachAu, formatOrbitalKmH } from './system/solarFacts';
+import { systemTravelParam, SYSTEM_TRAVEL_SPEED, SYSTEM_TRAVEL_VIEW_FRACTION } from './system/galacticPath';
 
 const DRAG_SENS = 0.005;
 const ZOOM_SENS = 0.0015;
@@ -232,6 +233,9 @@ export async function startApp(root: HTMLElement): Promise<void> {
     // --- フェード（ズームアウトで恒星系→星野へ） ----------------------------
     if (systemScene) {
       systemScene.update(animT);
+      const inSolarView = currentSystem.starIndex === 0 && fade > 0.5;
+      const travelAmpAu = inSolarView ? SYSTEM_TRAVEL_VIEW_FRACTION * nav.viewDistanceAu : 0;
+      systemScene.setTravelOffset(travelAmpAu * systemTravelParam(animT, SYSTEM_TRAVEL_SPEED));
       systemScene.root.traverse((o) => {
         const mat = (o as THREE.Mesh).material;
         if (!mat) return;

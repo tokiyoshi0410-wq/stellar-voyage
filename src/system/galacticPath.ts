@@ -19,14 +19,13 @@ export function galacticMarkerParam(k: number, count: number, t: number, flowSpe
   return Math.PI / 3 - wrapped;                                          // [+π/3 .. -π/3)（減少）
 }
 
-export const SYSTEM_TRAVEL_SPEED = 0.12; // 往復の角速度係数 rad/秒（実機調整）
-export const SYSTEM_TRAVEL_AMP = 0.28;   // 振幅 rad（弧の中央付近 ±約11AU・画面内に収める, 実機調整）
+export const SYSTEM_TRAVEL_SPEED = 0.35;          // 往復の角速度係数 rad/秒（実機調整）
+export const SYSTEM_TRAVEL_VIEW_FRACTION = 0.18;  // 旅の振幅 = viewDistanceAu の何割か（実機調整）
 
 /**
- * 太陽系が金の道を進む弧パラメータ。中央(0)を基準に振幅 SYSTEM_TRAVEL_AMP で
- * 滑らかに往復（sine）してループ。t=0 で 0（中心）。範囲は [-SYSTEM_TRAVEL_AMP, SYSTEM_TRAVEL_AMP]
- * ⊂ [-π/3, π/3] に収まり、画面外ワープのカクつきが無い。speed は往復の角速度。
+ * 太陽系トラベルの正規化位相 [-1, 1]（sine で滑らかに往復）。t=0 で 0（中心）。
+ * 実際の移動量(AU) = SYSTEM_TRAVEL_VIEW_FRACTION * viewDistanceAu * この値（呼び出し側で乗算）。
  */
 export function systemTravelParam(t: number, speed: number): number {
-  return SYSTEM_TRAVEL_AMP * Math.sin(t * speed);
+  return Math.sin(t * speed);
 }

@@ -4,7 +4,6 @@ import { orbitPosition, planetPhase, animatedPhase } from './orbit';
 import { makePlanetMaterial } from '../planets/PlanetMaterial';
 import {
   galacticPathPoint, galacticMarkerParam, GAL_ARC_SPAN, GAL_MARKER_COUNT, GAL_FLOW_SPEED,
-  systemTravelParam, SYSTEM_TRAVEL_SPEED,
 } from './galacticPath';
 
 export function planetTypeColor(type: PlanetType): number {
@@ -113,10 +112,6 @@ export class SystemScene {
       this.planetMeshes[i]!.position.set(x, y, z);
       this.ringMeshes.get(i)?.position.set(x, y, z);
     });
-    if (this.system.starIndex === 0) {
-      const [tx, ty, tz] = galacticPathPoint(systemTravelParam(t, SYSTEM_TRAVEL_SPEED));
-      this.travelGroup.position.set(tx, ty, tz);
-    }
   }
 
   planetWorldPos(i: number): [number, number, number] {
@@ -129,6 +124,11 @@ export class SystemScene {
     this.root.updateWorldMatrix(true, true);
     this.travelGroup.getWorldPosition(this._scratch);
     return [this._scratch.x, this._scratch.y, this._scratch.z];
+  }
+
+  /** 系全体を金の道（+X 方向）に沿って xAu だけ移動。app 側が viewDistance 比例で毎フレーム設定。 */
+  setTravelOffset(xAu: number): void {
+    this.travelGroup.position.set(xAu, 0, 0);
   }
 
   dispose(): void {
