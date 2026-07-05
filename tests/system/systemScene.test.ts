@@ -43,14 +43,14 @@ function makeSystem(starIndex: number): StellarSystem {
 }
 
 describe('SystemScene solar arrow', () => {
-  it('adds a direction arrow for the Solar System (starIndex 0)', () => {
+  it('adds the Sun galactic-orbit line for the Solar System (starIndex 0)', () => {
     const scene = new SystemScene(makeSystem(0));
-    expect(scene.root.children.some((c) => c instanceof THREE.ArrowHelper)).toBe(true);
+    expect(scene.root.children.some((c) => c instanceof THREE.Line)).toBe(true);
     scene.dispose();
   });
-  it('does not add the arrow for procedural systems', () => {
+  it('does not add the orbit line for procedural systems', () => {
     const scene = new SystemScene(makeSystem(5));
-    expect(scene.root.children.some((c) => c instanceof THREE.ArrowHelper)).toBe(false);
+    expect(scene.root.children.some((c) => c instanceof THREE.Line)).toBe(false);
     scene.dispose();
   });
 });

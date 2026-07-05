@@ -262,12 +262,12 @@ export async function startApp(root: HTMLElement): Promise<void> {
         const [px, py, pz] = orbitPosition(p.semiMajorAxisAu, phase);
         if (isSolar) {
           const f = PLANET_FACTS[i]!;
+          const orbKmh = Math.round(f.orbitalSpeedKmS * 3600).toLocaleString('en-US');
+          const rotKmh = f.rotationSpeedKmH.toLocaleString('en-US');
           labelItems.push({
-            text: `${p.name}  ${formatAuDistance(p.semiMajorAxisAu)} ・ 自転 ${f.rotationSpeedKmH}km/h${f.retrograde ? '(逆)' : ''}`,
+            text: `${p.name}  ${formatAuDistance(p.semiMajorAxisAu)}\n公転 ${orbKmh} km/h\n自転 ${rotKmh} km/h${f.retrograde ? '(逆)' : ''}`,
             worldPos: [px, py, pz],
           });
-          const [ox, oy, oz] = orbitPosition(p.semiMajorAxisAu, phase + Math.PI / 2);
-          labelItems.push({ text: `公転 ${f.orbitalSpeedKmS}km/s`, worldPos: [ox, oy, oz] });
         } else {
           labelItems.push({ text: `${p.name}  ${formatAuDistance(p.semiMajorAxisAu)}`, worldPos: [px, py, pz] });
         }

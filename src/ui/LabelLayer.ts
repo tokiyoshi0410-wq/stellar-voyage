@@ -38,7 +38,7 @@ export class LabelLayer {
       el = document.createElement('div');
       el.style.cssText =
         'position:absolute;left:0;top:0;color:#d6e4ff;font:11px system-ui,sans-serif;' +
-        'text-shadow:0 0 3px #000,0 0 3px #000;white-space:nowrap;pointer-events:none;padding-left:6px;';
+        'text-shadow:0 0 3px #000,0 0 3px #000;white-space:pre;pointer-events:none;padding-left:6px;';
       this.container.appendChild(el);
       this.pool[i] = el;
     }

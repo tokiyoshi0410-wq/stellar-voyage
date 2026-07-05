@@ -63,10 +63,19 @@ export class SystemScene {
     });
 
     if (system.starIndex === 0) {
-      // 太陽の銀河内での進行方向（模式的）。向き・長さ・色は見栄え調整可。
-      const dir = new THREE.Vector3(1, 0, 0.3).normalize();
-      const arrow = new THREE.ArrowHelper(dir, new THREE.Vector3(0, 0, 0), 1.2, 0xffd479, 0.25, 0.15);
-      this.root.add(arrow);
+      // 太陽の銀河公転の道すじ（模式的）。太陽=原点がこの線の上に乗る。半径/傾き/範囲は見栄え調整可。
+      const R = 40;
+      const pts: THREE.Vector3[] = [];
+      for (let i = 0; i <= 96; i++) {
+        const a = -Math.PI / 3 + (i / 96) * (2 * Math.PI / 3);
+        pts.push(new THREE.Vector3(R * Math.sin(a), 0, -R + R * Math.cos(a)));
+      }
+      const orbitLine = new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints(pts),
+        new THREE.LineBasicMaterial({ color: 0xffd479, transparent: true, opacity: 0.7 }),
+      );
+      orbitLine.rotation.x = 0.35;
+      this.root.add(orbitLine);
     }
 
     this.root.add(new THREE.PointLight(0xffffff, 2, 0, 0));
