@@ -2,9 +2,7 @@ import * as THREE from 'three';
 import type { StellarSystem, PlanetType } from './types';
 import { orbitPosition, planetPhase, animatedPhase } from './orbit';
 import { makePlanetMaterial } from '../planets/PlanetMaterial';
-import {
-  galacticPathPoint, galacticMarkerParam, GAL_ARC_SPAN, GAL_MARKER_COUNT, GAL_FLOW_SPEED,
-} from './galacticPath';
+import { galacticPathPoint, GAL_MARKER_COUNT } from './galacticPath';
 
 export function planetTypeColor(type: PlanetType): number {
   switch (type) {
@@ -75,8 +73,8 @@ export class SystemScene {
     if (system.starIndex === 0) {
       // 太陽の銀河公転の道すじ（模式的）。太陽=原点がこの線の上に乗る。半径/傾き/範囲は見栄え調整可。
       const pts: THREE.Vector3[] = [];
-      for (let i = 0; i <= 96; i++) {
-        const a = -Math.PI / 3 + (i / 96) * GAL_ARC_SPAN;
+      for (let i = 0; i <= 128; i++) {
+        const a = (i / 128) * Math.PI * 2;
         pts.push(new THREE.Vector3(...galacticPathPoint(a)));
       }
       const orbitLine = new THREE.Line(
@@ -92,7 +90,7 @@ export class SystemScene {
           new THREE.SphereGeometry(0.4, 12, 8),
           new THREE.MeshBasicMaterial({ color: 0xffd479, transparent: true, opacity: 0.85 }),
         );
-        const [x, y, z] = galacticPathPoint(galacticMarkerParam(k, GAL_MARKER_COUNT, 0, GAL_FLOW_SPEED));
+        const [x, y, z] = galacticPathPoint(((k + 0.5) / GAL_MARKER_COUNT) * Math.PI * 2);
         m.position.set(x, y, z);
         this.galMarkers.push(m);
         markerGroup.add(m);
@@ -126,9 +124,10 @@ export class SystemScene {
     return [this._scratch.x, this._scratch.y, this._scratch.z];
   }
 
-  /** 系全体を金の道（+X 方向）に沿って xAu だけ移動。app 側が viewDistance 比例で毎フレーム設定。 */
-  setTravelOffset(xAu: number): void {
-    this.travelGroup.position.set(xAu, 0, 0);
+  /** 系全体を銀河公転円に沿って angle(rad) だけ進める。app 側が viewDistance 比例で毎フレーム設定。 */
+  setTravelAngle(angle: number): void {
+    const [x, y, z] = galacticPathPoint(angle);
+    this.travelGroup.position.set(x, y, z);
   }
 
   dispose(): void {

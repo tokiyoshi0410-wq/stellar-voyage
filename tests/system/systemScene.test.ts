@@ -115,7 +115,7 @@ describe('SystemScene travel (whole system travels the galactic path)', () => {
     const sun0 = scene.sunWorldPos();
     const p0 = scene.planetWorldPos(0);
     const marker0 = scene.galMarkers[0]!.position.clone();
-    scene.setTravelOffset(7);
+    scene.setTravelAngle(0.3);
     const sun1 = scene.sunWorldPos();
     const p1 = scene.planetWorldPos(0);
     expect(Math.hypot(sun1[0]-sun0[0], sun1[1]-sun0[1], sun1[2]-sun0[2])).toBeGreaterThan(0);

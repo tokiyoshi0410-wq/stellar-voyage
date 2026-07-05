@@ -1,4 +1,4 @@
-export const GAL_PATH_R = 40;                    // 弧半径（AU, 見栄え）
+export const GAL_PATH_R = 22;                    // 弧半径（AU, 見栄え）
 export const GAL_ARC_SPAN = (2 * Math.PI) / 3;   // 弧の全角 120°（a∈[-π/3, π/3]）
 export const GAL_MARKER_COUNT = 6;               // 道標の数（実機調整）
 export const GAL_FLOW_SPEED = 0.15;              // rad/秒（実機調整）
