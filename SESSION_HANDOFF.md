@@ -17,33 +17,37 @@
   型別 GLSL 惑星シェーダー（昼夜境界+大気リム）、NASA 実在系外惑星 310 系統結合（実在バッジ）、
   ハビタブルゾーン判定。惑星クリックで日本語 PlanetPanel。
 
-## いま作業中 — 「連続ズーム航法 UX」ミルストーン
+## 直近完了 — 「連続ズーム航法 UX」ミルストーン ✅ 完了（2026-07-05）
 
-**目的（user 依頼）**: 現行の「galaxy/system 2 モード + ボタン切替」が使いにくいので作り替える。
-- **太陽系を斜め上から見下ろす宇宙船視点で開始**（本物の 8 惑星）
-- **マウスドラッグ=視点周回 / ホイール=ズーム / WASD=移動 / 画面下の速度スライダー**で直感操作
-- **ズームアウトで太陽が銀河の一星になり他星系へ連続遷移**（クロスフェードで継ぎ目を隠す）
+現行の「galaxy/system 2 モード + ボタン切替」を、単一の連続ズーム航法へ作り替え完了。
+- **太陽系を斜め上から見下ろす視点で開始**（本物の 8 惑星・実質量）
+- **ドラッグ=視点周回 / ホイール=ズーム / WASD=移動 / 画面下の速度スライダー**
+- **ズームアウトで太陽系がフェードし銀河星野へ連続遷移**、別の星に近づくとその星系へフォーカス切替
+- **クリックで星/惑星を選択**（ピクセル単位レイキャスト）→ 日本語情報パネル
 
-- **設計書(spec)**: `docs/superpowers/specs/2026-07-05-stellar-voyage-navigation-ux-design.md`
-- **実装計画(plan)**: `docs/superpowers/plans/2026-07-05-stellar-voyage-navigation-ux.md`（全 10 タスク）
+- spec: `docs/superpowers/specs/2026-07-05-stellar-voyage-navigation-ux-design.md`
+- plan: `docs/superpowers/plans/2026-07-05-stellar-voyage-navigation-ux.md`（全 10 タスク）
+- SDD ledger 全詳細: `.superpowers/sdd/progress.md`（「Navigation UX」節）
 
-### 進捗（このセッション終了時点）
+**現 HEAD: `b382e6b`。範囲 `bc0926b..b382e6b` = Nav-1〜10 + WASD fix + 最終レビュー修正 + cosmetic。すべて `main`・未 push（remote 未設定）。**
 
-| Task | 内容 | 状態 |
-|---|---|---|
-| Nav-1 | 太陽系 8 惑星データ + Planet.hasRing | ✅ 完了・レビュー通過（`a3b789f`）|
-| Nav-2 | buildStellarSystem index 0→太陽系 | ✅ 完了・レビュー通過（`1962147`）|
-| Nav-3 | orbitCameraPosition（周回カメラ計算） | ✅ 完了・レビュー通過（`6090c6a`）|
-| Nav-4 | fade.ts + speed.ts（フェード曲線+速度写像） | **⏳ 次はここ。brief 生成済み・未派遣** |
-| Nav-5 | NavigationController（状態機械） | 未着手 |
-| Nav-6 | InputMapper（ドラッグ/ホイール/WASD） | 未着手 |
-| Nav-7 | SpeedSlider + ControlHints（DOM） | 未着手 |
-| Nav-8 | StarField フォーカス相対描画 + 土星の環 | 未着手（描画→要 Playwright 検証）|
-| Nav-9 | app.ts 再構築 前半（単一シーン+周回カメラ+入力+フェード） | 未着手（描画→要 Playwright）|
-| Nav-10 | app.ts 再構築 後半（フォーカス切替+クリック選択） | 未着手（描画→要 Playwright）|
+全10タスク完了・全 per-task レビュー通過・opus 全ブランチ最終レビュー通過。113/113 テスト・tsc クリーン・build 成功。
+コントローラが Playwright 実機 E2E で全受入基準を確認済み（太陽系見下ろし起動 / ドラッグ周回 / ホイールズーム / WASD 移動 / 銀河フェード遷移 / フォーカス切替 Sol→他星 / クリック選択）。
 
-**現 HEAD: `6090c6a`。Nav-4 の BASE も `6090c6a`。**
-Nav-4 の brief は `.superpowers/sdd/task-4-brief.md` に生成済み（まだ実装者を派遣していない）。
+**最終レビュー + E2E で捕捉し修正済みの主なバグ:**
+- WASD がキャンバス（フォーカス不可）にキーバインドされ実ユーザーに効かず → InputMapper のキーボードを window へ
+- 星野シェーダが camAu を二重減算（viewMatrix と重複）→ シェーダの `- uCameraAu` 除去（数学的に確実、視覚的定量分離は view 回転に埋もれ不可）
+- クリックが中央固定レイ → ピクセル単位 Raycaster へ（user 承認）
+- 太陽系の質量が密度近似で誤り（地球 0.7 倍表示）→ 実質量ハードコード
+
+### 未対応（次セッション/follow-up、いずれも merge ブロッカーではない）
+1. 孤立した dead module 削除（ShipController/InputController/HUD/SystemHud/FloatingOrigin + 旧 InfoPanel「この星系へ」経路。tree-shake 済みで安全）
+2. **実在系外惑星の星**を新フローで E2E 確認（コード経路は不変・低リスクだが未クリック）
+3. `stellarSystem.test` のテスト名が古い（index 0 は現在太陽系）→ 改名 + 手続き生成経路の assertion 追加
+4. 惑星シェーダに opacity uniform が無くフェードせずポップ（fade 帯ではサブピクセルで無視可）
+5. `starRelative.ts` は未使用 + I-A 修正でシェーダと式が不一致 → 削除
+6. `DENSITY` が planetGen.ts と重複
+7. 次ミルストーン: scene/mode マネージャ抽出、catalog↔exoplanets の index 整合保証
 
 ## 再開手順（SDD ループ）
 
