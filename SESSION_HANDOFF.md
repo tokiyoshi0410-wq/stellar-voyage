@@ -146,4 +146,4 @@ opus 最終レビュー通過。124/124 テスト・tsc・build 緑。Playwright
 
 ## 合言葉
 
-user が「宇宙旅行続き」「stellar-voyage 続き」「航法 UX 続き」等と言ったらこのファイルを最初に読む。
+user が「宇宙旅行シミュレーション」「宇宙旅行続き」「stellar-voyage 続き」「航法 UX 続き」等と言ったらこのファイルを最初に読む。
