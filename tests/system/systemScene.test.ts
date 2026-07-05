@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import * as THREE from 'three';
 import { SystemScene, planetTypeColor } from '../../src/system/SystemScene';
 import type { StellarSystem } from '../../src/system/types';
+import { GAL_MARKER_COUNT } from '../../src/system/galacticPath';
 
 const system: StellarSystem = {
   starIndex: 0, starName: 'Test', spectralClass: 'G', temperatureK: 5800, luminositySun: 1,
@@ -70,6 +71,30 @@ describe('SystemScene.update', () => {
     expect(scene.planetMeshes[0]!.position.distanceTo(before)).toBeGreaterThan(0);
     // 中心星は update で動かない（原点固定）
     expect(scene.root.children[0]!.position.length()).toBe(0);
+    scene.dispose();
+  });
+});
+
+describe('SystemScene galactic-path markers', () => {
+  it('solar system has flowing galactic-path markers that move with update(t)', () => {
+    const sys: StellarSystem = {
+      starIndex: 0, starName: '太陽', spectralClass: 'G', temperatureK: 5800, luminositySun: 1,
+      planets: [],
+    };
+    const scene = new SystemScene(sys);
+    expect(scene.galMarkers.length).toBe(GAL_MARKER_COUNT);
+    const before = scene.galMarkers[0]!.position.clone();
+    scene.update(3);
+    expect(scene.galMarkers[0]!.position.distanceTo(before)).toBeGreaterThan(0);
+    scene.dispose();
+  });
+  it('non-solar system has no galactic-path markers', () => {
+    const sys: StellarSystem = {
+      starIndex: 5, starName: 'x', spectralClass: 'K', temperatureK: 4000, luminositySun: 0.3,
+      planets: [],
+    };
+    const scene = new SystemScene(sys);
+    expect(scene.galMarkers.length).toBe(0);
     scene.dispose();
   });
 });

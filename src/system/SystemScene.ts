@@ -2,6 +2,9 @@ import * as THREE from 'three';
 import type { StellarSystem, PlanetType } from './types';
 import { orbitPosition, planetPhase, animatedPhase } from './orbit';
 import { makePlanetMaterial } from '../planets/PlanetMaterial';
+import {
+  galacticPathPoint, galacticMarkerParam, GAL_ARC_SPAN, GAL_MARKER_COUNT, GAL_FLOW_SPEED,
+} from './galacticPath';
 
 export function planetTypeColor(type: PlanetType): number {
   switch (type) {
@@ -20,6 +23,7 @@ function planetDisplayRadius(radiusEarth: number): number {
 export class SystemScene {
   readonly root = new THREE.Group();
   readonly planetMeshes: THREE.Mesh[] = [];
+  readonly galMarkers: THREE.Mesh[] = [];
   private readonly ringMeshes = new Map<number, THREE.Mesh>();
 
   constructor(readonly system: StellarSystem) {
@@ -66,11 +70,10 @@ export class SystemScene {
 
     if (system.starIndex === 0) {
       // 太陽の銀河公転の道すじ（模式的）。太陽=原点がこの線の上に乗る。半径/傾き/範囲は見栄え調整可。
-      const R = 40;
       const pts: THREE.Vector3[] = [];
       for (let i = 0; i <= 96; i++) {
-        const a = -Math.PI / 3 + (i / 96) * (2 * Math.PI / 3);
-        pts.push(new THREE.Vector3(R * Math.sin(a), 0, -R + R * Math.cos(a)));
+        const a = -Math.PI / 3 + (i / 96) * GAL_ARC_SPAN;
+        pts.push(new THREE.Vector3(...galacticPathPoint(a)));
       }
       const orbitLine = new THREE.Line(
         new THREE.BufferGeometry().setFromPoints(pts),
@@ -78,6 +81,27 @@ export class SystemScene {
       );
       orbitLine.rotation.x = 0.35;
       this.root.add(orbitLine);
+
+      // 道標マーカー: 金の弧に沿って流れて太陽の移動を示す。弧と同じ傾きのグループ配下。
+      const markerGroup = new THREE.Group();
+      markerGroup.rotation.x = 0.35;
+      for (let k = 0; k < GAL_MARKER_COUNT; k++) {
+        const m = new THREE.Mesh(
+          new THREE.SphereGeometry(0.4, 12, 8),
+          new THREE.MeshBasicMaterial({ color: 0xffd479, transparent: true, opacity: 0.85 }),
+        );
+        const [x, y, z] = galacticPathPoint(galacticMarkerParam(k, GAL_MARKER_COUNT, 0, GAL_FLOW_SPEED));
+        m.position.set(x, y, z);
+        this.galMarkers.push(m);
+        markerGroup.add(m);
+      }
+      this.root.add(markerGroup);
+
+      // 小さな進行方向の矢印（太陽から前方=+X, 弧の接線）。以前の大矢印とは別物・小さい。
+      const arrow = new THREE.ArrowHelper(
+        new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 0, 0), 5, 0xffd479, 2, 1.2,
+      );
+      this.root.add(arrow);
     }
 
     this.root.add(new THREE.PointLight(0xffffff, 2, 0, 0));
@@ -91,6 +115,11 @@ export class SystemScene {
       );
       this.planetMeshes[i]!.position.set(x, y, z);
       this.ringMeshes.get(i)?.position.set(x, y, z);
+    });
+
+    this.galMarkers.forEach((m, k) => {
+      const [x, y, z] = galacticPathPoint(galacticMarkerParam(k, GAL_MARKER_COUNT, t, GAL_FLOW_SPEED));
+      m.position.set(x, y, z);
     });
   }
 
