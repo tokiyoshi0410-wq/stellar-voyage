@@ -40,22 +40,24 @@ describe('galacticMarkerParam', () => {
   });
 });
 
-describe('systemTravelParam', () => {
-  it('starts centered (0) at t=0', () => {
-    expect(systemTravelParam(0, 0.05)).toBeCloseTo(0, 9);
+describe('systemTravelParam (bounded oscillation)', () => {
+  it('is centered (0) at t=0', () => {
+    expect(systemTravelParam(0, 0.12)).toBeCloseTo(0, 9);
+  });
+  it('moves away from center for t>0', () => {
+    expect(Math.abs(systemTravelParam(1, 0.12))).toBeGreaterThan(0);
   });
   it('stays within [-π/3, π/3]', () => {
     for (const t of [0, 1, 5, 13, 40, 100]) {
-      const p = systemTravelParam(t, 0.05);
-      expect(p).toBeGreaterThanOrEqual(-Math.PI / 3 - 1e-9);
-      expect(p).toBeLessThanOrEqual(Math.PI / 3 + 1e-9);
+      const p = systemTravelParam(t, 0.12);
+      expect(p).toBeGreaterThanOrEqual(-Math.PI / 3);
+      expect(p).toBeLessThanOrEqual(Math.PI / 3);
     }
   });
-  it('moves toward -π/3 as t increases (before wrap)', () => {
-    expect(systemTravelParam(1, 0.05)).toBeLessThan(systemTravelParam(0, 0.05));
+  it('returns to center at half period (t = π/speed)', () => {
+    expect(systemTravelParam(Math.PI / 0.12, 0.12)).toBeCloseTo(0, 9);
   });
-  it('loops with period GAL_ARC_SPAN / speed', () => {
-    const period = GAL_ARC_SPAN / 0.05;
-    expect(systemTravelParam(2 + period, 0.05)).toBeCloseTo(systemTravelParam(2, 0.05), 9);
+  it('is periodic with period 2π/speed', () => {
+    expect(systemTravelParam(2 + 2 * Math.PI / 0.12, 0.12)).toBeCloseTo(systemTravelParam(2, 0.12), 9);
   });
 });
