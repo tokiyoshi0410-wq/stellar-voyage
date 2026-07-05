@@ -17,7 +17,21 @@
   型別 GLSL 惑星シェーダー（昼夜境界+大気リム）、NASA 実在系外惑星 310 系統結合（実在バッジ）、
   ハビタブルゾーン判定。惑星クリックで日本語 PlanetPanel。
 
-## 直近完了 — 「太陽系の詳細表示（公転/自転速度・地球距離・光速/新幹線）」ミルストーン ✅ 完了（2026-07-06）
+## 直近完了 — 「恒星系の公転アニメーション」ミルストーン ✅ 完了（2026-07-06）
+
+全恒星系で惑星が軌道に沿って公転（時間で回る）。太陽（中心星）は中心に静止。内惑星ほど速い（ケプラー第三法則の相対速度）。惑星メッシュ・ラベル・クリック判定が同じ `animT` と純関数 `animatedPhase` で位置一致し、動く惑星に追従・選択できる。
+- **純関数**（`src/system/orbit.ts`）: `orbitalAngularSpeed(a)=min(ANIM_K·a^-1.5, ANIM_MAX_OMEGA)`（ケプラー・上限クランプ）、`animatedPhase(starIndex,i,a,t)=planetPhase+ω·t`。時間スケール `ANIM_EARTH_PERIOD_SEC=12`（地球12秒/周・live-tune、テストで秒数は固定しない）。
+- **`SystemScene.update(t)`**: 毎フレーム惑星メッシュ（＋土星の環 `ringMeshes` Map）を現在位置へ。中心星・軌道リング円・PointLight は静止。
+- **`pickPlanet(...,t)`**（optional t=0＝従来静的挙動）と `app.ts` のラベルが同じ `animT` を使う（クリックが描画位置と一致）。`app.ts` は `animT += dt` を毎フレーム累積し `if(systemScene)` 内で `systemScene.update(animT)` を呼ぶ。`planetPhase` import は除去し `animatedPhase` に統一。
+- 不変条件（`animatedPhase` にコメント記載）: mesh/label/pick は必ず同じ `(starIndex,i,a)` と同じ `animT` でこれを呼ぶ。
+- spec: `docs/superpowers/specs/2026-07-06-stellar-voyage-orbit-animation-design.md`
+- plan: `docs/superpowers/plans/2026-07-06-stellar-voyage-orbit-animation.md`（全4タスク + polish）
+
+**現 HEAD: `d07b0ec`。範囲 `159fa15..d07b0ec` = 4タスク + polish(d07b0ec: 不変条件コメント/中心星static test/typo修正)。すべて `main`・未 push。**
+opus 最終レビュー「Ready to merge — YES」（Critical/Important 0、5 named risk[単一時刻ソース一貫/TDZ無し(animTはclick時=init後読み)/無回帰(t=0=planetPhase・update は星/リング/光不変・procedural同様)/ケプラー+clamp(a=0はpow=Inf→π=有限でNaN無し)/hot-path無視可]すべて健全と検証)。180/180・tsc・build(493KB) 緑。Playwright E2E: 4秒で内惑星が移動(水星105/金星190/地球205/火星214px)・太陽は中心静止・ラベルが惑星に追従・地球の現在位置クリックで「地球（実在）」=動く惑星のクリック追従・軌道リング静止・太陽の軌道線表示。実装/レビュー=sonnet、最終=opus。
+Deferred（非ブロッキング, progress.md 参照）: ring-follow の unit test（E2E 検証済・private map で awkward）、`planetPhase` を (starIndex,i) で memoize（8惑星で無視可）、`SystemScene.update` を fade>0 でゲート（現状 invisible でも呼ぶ・8メッシュで安価）。
+
+## 以前の完了 — 「太陽系の詳細表示（公転/自転速度・地球距離・光速/新幹線）」ミルストーン ✅ 完了（2026-07-06）
 
 太陽系ビュー（`starIndex 0` 限定）を教育的に詳しく。手続き生成の恒星系は現状維持（`isSolar` gate）。
 - **常時ラベル**: 各軌道上に公転速度(km/s)、各惑星 near に自転赤道速度(km/h、金星/天王星は「(逆)」)、太陽 near に「太陽 ・ 公転 220km/s（クリックで詳細）」＋銀河内の進行方向を示す矢印（`SystemScene` に starIndex 0 のとき `ArrowHelper`）
