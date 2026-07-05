@@ -68,6 +68,8 @@ describe('SystemScene.update', () => {
     const before = scene.planetMeshes[0]!.position.clone();
     scene.update(5);
     expect(scene.planetMeshes[0]!.position.distanceTo(before)).toBeGreaterThan(0);
+    // 中心星は update で動かない（原点固定）
+    expect(scene.root.children[0]!.position.length()).toBe(0);
     scene.dispose();
   });
 });

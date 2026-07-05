@@ -7,7 +7,7 @@ import type { StellarSystem } from '../../src/system/types';
 // カメラを惑星実座標の少し手前に置いて確認する。
 import { orbitPosition, planetPhase, animatedPhase } from '../../src/system/orbit';
 
-function oneePlanetSystem(): StellarSystem {
+function onePlanetSystem(): StellarSystem {
   return {
     starIndex: 0, starName: 'x', spectralClass: 'G', temperatureK: 5800, luminositySun: 1,
     planets: [{
@@ -40,7 +40,7 @@ describe('pickPlanet', () => {
 
 describe('pickPlanet time t', () => {
   it('picks based on the time-advanced position', () => {
-    const sys = oneePlanetSystem();
+    const sys = onePlanetSystem();
     const T = 5;
     const posT = orbitPosition(1, animatedPhase(0, 0, 1, T)); // 惑星の t=T 位置
     // t=T で t=T 位置を狙う → 当たる

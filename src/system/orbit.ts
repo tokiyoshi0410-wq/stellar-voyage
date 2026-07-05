@@ -22,7 +22,11 @@ export function orbitalAngularSpeed(semiMajorAxisAu: number): number {
   return Math.min(ANIM_K * Math.pow(semiMajorAxisAu, -1.5), ANIM_MAX_OMEGA);
 }
 
-/** 時刻 t 秒での軌道位相 = planetPhase + ω(a)·t */
+/**
+ * 時刻 t 秒での軌道位相 = planetPhase + ω(a)·t。
+ * 不変条件: 惑星メッシュ(SystemScene.update) / ラベル(app.ts) / クリック判定(pickPlanet) は
+ * 必ず同じ (starIndex, planetIndex, a) と同じ animT でこれを呼ぶこと（描画位置とクリック位置を一致させるため）。
+ */
 export function animatedPhase(
   starIndex: number, planetIndex: number, semiMajorAxisAu: number, t: number,
 ): number {
