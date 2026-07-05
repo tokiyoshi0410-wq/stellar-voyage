@@ -27,7 +27,8 @@ import { ScalePanel } from './ui/ScalePanel';
 import { scaleInfoFor } from './edu/scaleInfo';
 import { scaleBarFor } from './edu/scaleBar';
 import { ScaleBar } from './ui/ScaleBar';
-import { LocalGroupDiagram } from './ui/LocalGroupDiagram';
+import { LocalGroup } from './galaxy/LocalGroup';
+import { localGroupFade } from './nav/localGroupFade';
 
 const DRAG_SENS = 0.005;
 const ZOOM_SENS = 0.0015;
@@ -61,7 +62,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
   const labels = new LabelLayer(root);
   const scalePanel = new ScalePanel(root);
   const scaleBar = new ScaleBar(root);
-  const localGroup = new LocalGroupDiagram(root);
+  const localGroup = new LocalGroup();
 
   engine.renderer.domElement.style.touchAction = 'none';
 
@@ -79,6 +80,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
 
   const field = new StarField(catalog.columns);
   engine.scene.add(field.object);
+  engine.scene.add(localGroup.object);
 
   let systemScene: SystemScene | null = null;
   function rebuildSystem(index: number) {
@@ -210,7 +212,11 @@ export async function startApp(root: HTMLElement): Promise<void> {
       engine.renderer.domElement.clientHeight,
       engine.camera.fov * Math.PI / 180,
     ));
-    localGroup.setVisible(scaleInfo.stage === 'localgroup');
+    const lgFade = localGroupFade(nav.viewDistanceAu);
+    localGroup.object.visible = lgFade > 0;
+    localGroup.setOpacity(lgFade);
+    localGroup.setPosition(-nav.focusWorldAu[0], -nav.focusWorldAu[1], -nav.focusWorldAu[2]);
+    field.setOpacity(1 - lgFade);
     const labelItems: LabelItem[] = [];
     if (fade > 0.5) {
       labelItems.push({ text: starDisplayName(currentSystem.starIndex, currentSystem.starName), worldPos: [0, 0, 0] });
@@ -229,6 +235,10 @@ export async function startApp(root: HTMLElement): Promise<void> {
         const name = starDisplayName(s.index, catalog.nameOf(s.index));
         labelItems.push({ text: `${name}  ${(distSolPc * PARSEC_IN_LY).toFixed(1)} 光年`, worldPos });
       }
+    }
+    if (lgFade > 0.5) {
+      labelItems.push({ text: '現在地（太陽系）', worldPos: localGroup.markerWorldPos() });
+      labelItems.push({ text: '約250万光年', worldPos: localGroup.midpointWorldPos() });
     }
     slider.setReadout(speedFromSlider(slider.value()), starDisplayName(currentSystem.starIndex, currentSystem.starName));
 
