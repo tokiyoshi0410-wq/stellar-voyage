@@ -45,3 +45,20 @@ describe('InputMapper', () => {
     window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyW' })); // cleanup in case dispose didn't work
   });
 });
+
+describe('InputMapper.consumePauseToggle', () => {
+  it('fires once per physical Space press and clears on consume', () => {
+    const kd = () => window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space' }));
+    const ku = () => window.dispatchEvent(new KeyboardEvent('keyup', { code: 'Space' }));
+    const im = new InputMapper(document.createElement('div'));
+    expect(im.consumePauseToggle()).toBe(false);   // 無押下
+    kd();
+    expect(im.consumePauseToggle()).toBe(true);     // 押下でエッジ
+    expect(im.consumePauseToggle()).toBe(false);    // consume 済
+    kd();                                            // auto-repeat（keyup 無し）
+    expect(im.consumePauseToggle()).toBe(false);    // 再発火しない
+    ku(); kd();                                      // 離して再押下
+    expect(im.consumePauseToggle()).toBe(true);     // 再びエッジ
+    im.dispose();
+  });
+});

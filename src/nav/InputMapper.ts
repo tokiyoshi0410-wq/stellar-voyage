@@ -3,6 +3,7 @@ export class InputMapper {
   private dx = 0; private dy = 0;
   private wheel = 0;
   private readonly keys = new Set<string>();
+  private pauseToggleRequested = false;
 
   private readonly onDown = () => { this.down = true; };
   private readonly onUp = () => { this.down = false; };
@@ -10,7 +11,13 @@ export class InputMapper {
     if (this.down) { this.dx += e.movementX ?? 0; this.dy += e.movementY ?? 0; }
   };
   private readonly onWheel = (e: WheelEvent) => { this.wheel += e.deltaY ?? 0; };
-  private readonly onKeyDown = (e: KeyboardEvent) => { this.keys.add(e.code); };
+  private readonly onKeyDown = (e: KeyboardEvent) => {
+    if (e.code === 'Space' && !this.keys.has('Space')) {
+      this.pauseToggleRequested = true;
+      e.preventDefault();
+    }
+    this.keys.add(e.code);
+  };
   private readonly onKeyUp = (e: KeyboardEvent) => { this.keys.delete(e.code); };
 
   constructor(private readonly target: HTMLElement) {
@@ -29,6 +36,11 @@ export class InputMapper {
     const d = { dx: this.dx, dy: this.dy }; this.dx = 0; this.dy = 0; return d;
   }
   consumeWheel(): number { const w = this.wheel; this.wheel = 0; return w; }
+  consumePauseToggle(): boolean {
+    const v = this.pauseToggleRequested;
+    this.pauseToggleRequested = false;
+    return v;
+  }
   movement(): { forward: number; right: number } {
     return {
       forward: (this.keys.has('KeyW') ? 1 : 0) - (this.keys.has('KeyS') ? 1 : 0),
