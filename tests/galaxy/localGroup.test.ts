@@ -16,6 +16,13 @@ describe('LocalGroup', () => {
       const m = (c as { material?: { uniforms?: { uOpacity?: { value: number } } } }).material;
       if (m?.uniforms?.uOpacity) expect(m.uniforms.uOpacity.value).toBe(0.4);
     }
+    let markerOpacity: number | undefined;
+    lg.object.traverse((o) => {
+      if (o.type === 'Mesh') {
+        markerOpacity = (o as unknown as { material: { opacity: number } }).material.opacity;
+      }
+    });
+    expect(markerOpacity).toBe(0.4);
     lg.dispose();
   });
   it('midpointWorldPos reflects setPosition', () => {

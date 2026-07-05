@@ -2,6 +2,9 @@ import * as THREE from 'three';
 import { GalaxyDisk } from './GalaxyDisk';
 import { MILKY_WAY, ANDROMEDA, ANDROMEDA_OFFSET_AU } from './galaxyParams';
 
+const _scratchA = new THREE.Vector3();
+const _scratchB = new THREE.Vector3();
+
 export class LocalGroup {
   readonly object: THREE.Group;
   private readonly milkyWay: GalaxyDisk;
@@ -26,7 +29,7 @@ export class LocalGroup {
     // 現在地マーカー（天の川円盤内の一点。傾きを継承させるため milkyWay の子）
     this.marker = new THREE.Mesh(
       new THREE.SphereGeometry(MILKY_WAY.radiusAu * 0.02, 8, 8),
-      new THREE.MeshBasicMaterial({ color: 0xffd479 }),
+      new THREE.MeshBasicMaterial({ color: 0xffd479, transparent: true }),
     );
     this.marker.position.set(MILKY_WAY.radiusAu * 0.55, 0, 0);
     this.milkyWay.object.add(this.marker);
@@ -35,6 +38,7 @@ export class LocalGroup {
   setOpacity(o: number): void {
     this.milkyWay.setOpacity(o);
     this.andromeda.setOpacity(o);
+    (this.marker.material as THREE.MeshBasicMaterial).opacity = o;
   }
 
   setPosition(x: number, y: number, z: number): void {
@@ -43,18 +47,19 @@ export class LocalGroup {
 
   markerWorldPos(): [number, number, number] {
     this.object.updateWorldMatrix(true, true);
-    const v = new THREE.Vector3();
-    this.marker.getWorldPosition(v);
-    return [v.x, v.y, v.z];
+    this.marker.getWorldPosition(_scratchA);
+    return [_scratchA.x, _scratchA.y, _scratchA.z];
   }
 
   midpointWorldPos(): [number, number, number] {
     this.object.updateWorldMatrix(true, true);
-    const a = new THREE.Vector3();
-    const b = new THREE.Vector3();
-    this.milkyWay.object.getWorldPosition(a);
-    this.andromeda.object.getWorldPosition(b);
-    return [(a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2];
+    this.milkyWay.object.getWorldPosition(_scratchA);
+    this.andromeda.object.getWorldPosition(_scratchB);
+    return [
+      (_scratchA.x + _scratchB.x) / 2,
+      (_scratchA.y + _scratchB.y) / 2,
+      (_scratchA.z + _scratchB.z) / 2,
+    ];
   }
 
   dispose(): void {
