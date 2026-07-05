@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  galacticPathPoint, galacticMarkerParam, GAL_ARC_SPAN,
+  galacticPathPoint, galacticMarkerParam, GAL_ARC_SPAN, systemTravelParam,
 } from '../../src/system/galacticPath';
 
 describe('galacticPathPoint', () => {
@@ -37,5 +37,25 @@ describe('galacticMarkerParam', () => {
   it('loops with period GAL_ARC_SPAN / flowSpeed', () => {
     const period = GAL_ARC_SPAN / 0.15;
     expect(galacticMarkerParam(2, 6, 1 + period, 0.15)).toBeCloseTo(galacticMarkerParam(2, 6, 1, 0.15), 9);
+  });
+});
+
+describe('systemTravelParam', () => {
+  it('starts centered (0) at t=0', () => {
+    expect(systemTravelParam(0, 0.05)).toBeCloseTo(0, 9);
+  });
+  it('stays within [-π/3, π/3]', () => {
+    for (const t of [0, 1, 5, 13, 40, 100]) {
+      const p = systemTravelParam(t, 0.05);
+      expect(p).toBeGreaterThanOrEqual(-Math.PI / 3 - 1e-9);
+      expect(p).toBeLessThanOrEqual(Math.PI / 3 + 1e-9);
+    }
+  });
+  it('moves toward -π/3 as t increases (before wrap)', () => {
+    expect(systemTravelParam(1, 0.05)).toBeLessThan(systemTravelParam(0, 0.05));
+  });
+  it('loops with period GAL_ARC_SPAN / speed', () => {
+    const period = GAL_ARC_SPAN / 0.05;
+    expect(systemTravelParam(2 + period, 0.05)).toBeCloseTo(systemTravelParam(2, 0.05), 9);
   });
 });
