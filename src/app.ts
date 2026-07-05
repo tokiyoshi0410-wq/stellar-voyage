@@ -17,7 +17,7 @@ import { pickStar } from './selection/Picker';
 import { pickPlanet } from './system/planetPick';
 import { InfoPanel } from './ui/InfoPanel';
 import { PlanetPanel } from './ui/PlanetPanel';
-import { describeStar, formatAuDistance } from './ui/format';
+import { describeStar, formatAuDistance, starDisplayName } from './ui/format';
 import { nearestStarPc } from './nav/nearestStar';
 import { orbitPosition, planetPhase } from './system/orbit';
 import { LabelLayer, type LabelItem } from './ui/LabelLayer';
@@ -129,7 +129,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
     ];
     const sIdx = pickStar(camPc, rayDir, catalog.columns, PICK_ANGLE);
     if (sIdx != null) {
-      infoPanel.show(describeStar(catalog.columns, sIdx, catalog.nameOf(sIdx)));
+      infoPanel.show(describeStar(catalog.columns, sIdx, starDisplayName(sIdx, catalog.nameOf(sIdx))));
       planetPanel.hide();
     } else {
       infoPanel.hide();
@@ -197,7 +197,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
     // --- ラベル（星名 / 惑星名+距離） ------------------------------------
     const labelItems: LabelItem[] = [];
     if (fade > 0.5) {
-      labelItems.push({ text: currentSystem.starName, worldPos: [0, 0, 0] });
+      labelItems.push({ text: starDisplayName(currentSystem.starIndex, currentSystem.starName), worldPos: [0, 0, 0] });
       currentSystem.planets.forEach((p, i) => {
         const [px, py, pz] = orbitPosition(p.semiMajorAxisAu, planetPhase(currentSystem.starIndex, i));
         labelItems.push({ text: `${p.name}  ${formatAuDistance(p.semiMajorAxisAu)}`, worldPos: [px, py, pz] });
@@ -210,13 +210,13 @@ export async function startApp(root: HTMLElement): Promise<void> {
           (px - fp[0]) * AU_PER_PC, (py - fp[1]) * AU_PER_PC, (pz - fp[2]) * AU_PER_PC,
         ];
         const distSolPc = Math.hypot(px, py, pz);
-        const name = catalog.nameOf(s.index) ?? `HYG #${s.index}`;
+        const name = starDisplayName(s.index, catalog.nameOf(s.index));
         labelItems.push({ text: `${name}  ${(distSolPc * PARSEC_IN_LY).toFixed(1)} 光年`, worldPos });
       }
     }
     labels.render(labelItems, engine.camera, engine.renderer.domElement);
 
-    slider.setReadout(speedFromSlider(slider.value()), currentSystem.starName);
+    slider.setReadout(speedFromSlider(slider.value()), starDisplayName(currentSystem.starIndex, currentSystem.starName));
 
     engine.render();
     requestAnimationFrame(frame);

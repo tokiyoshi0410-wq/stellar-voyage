@@ -48,3 +48,9 @@ export function formatAuDistance(au: number): string {
   const okm = (au * AU_IN_OKUKM).toPrecision(2);
   return `${auStr} AU ≈ ${okm}億km`;
 }
+
+// 星の表示名: 太陽（HYG index 0）は日本語で「太陽」、固有名の無い星は「HYG #番号」。
+export function starDisplayName(index: number, name: string | null): string {
+  if (index === 0) return '太陽';
+  return name ?? `HYG #${index}`;
+}

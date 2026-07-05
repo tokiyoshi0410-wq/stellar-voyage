@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  formatSpeed, formatDistanceLy, describeStar, formatAuDistance,
+  formatSpeed, formatDistanceLy, describeStar, formatAuDistance, starDisplayName,
 } from '../../src/ui/format';
 
 describe('formatSpeed', () => {
@@ -51,5 +51,16 @@ describe('formatAuDistance', () => {
   it('formats inner and outer planets sensibly', () => {
     expect(formatAuDistance(0.39)).toMatch(/0\.39 AU/);
     expect(formatAuDistance(30.1)).toMatch(/30 AU/);
+  });
+});
+
+describe('starDisplayName', () => {
+  it('renders the Sun (index 0) as 太陽 regardless of catalog name', () => {
+    expect(starDisplayName(0, 'Sol')).toBe('太陽');
+    expect(starDisplayName(0, null)).toBe('太陽');
+  });
+  it('uses the proper name for other stars, falling back to HYG #index', () => {
+    expect(starDisplayName(5, 'Sirius')).toBe('Sirius');
+    expect(starDisplayName(42, null)).toBe('HYG #42');
   });
 });
