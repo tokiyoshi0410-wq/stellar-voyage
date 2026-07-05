@@ -37,3 +37,20 @@ describe('SystemScene', () => {
     expect(scene.planetMeshes[0]!.position.length()).toBeCloseTo(1, 5);
   });
 });
+
+function makeSystem(starIndex: number): StellarSystem {
+  return { starIndex, starName: 't', spectralClass: 'G', temperatureK: 5800, luminositySun: 1, planets: [] };
+}
+
+describe('SystemScene solar arrow', () => {
+  it('adds a direction arrow for the Solar System (starIndex 0)', () => {
+    const scene = new SystemScene(makeSystem(0));
+    expect(scene.root.children.some((c) => c instanceof THREE.ArrowHelper)).toBe(true);
+    scene.dispose();
+  });
+  it('does not add the arrow for procedural systems', () => {
+    const scene = new SystemScene(makeSystem(5));
+    expect(scene.root.children.some((c) => c instanceof THREE.ArrowHelper)).toBe(false);
+    scene.dispose();
+  });
+});

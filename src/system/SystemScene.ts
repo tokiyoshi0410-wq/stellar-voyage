@@ -62,12 +62,19 @@ export class SystemScene {
       }
     });
 
+    if (system.starIndex === 0) {
+      // 太陽の銀河内での進行方向（模式的）。向き・長さ・色は見栄え調整可。
+      const dir = new THREE.Vector3(1, 0, 0.3).normalize();
+      const arrow = new THREE.ArrowHelper(dir, new THREE.Vector3(0, 0, 0), 1.2, 0xffd479, 0.25, 0.15);
+      this.root.add(arrow);
+    }
+
     this.root.add(new THREE.PointLight(0xffffff, 2, 0, 0));
   }
 
   dispose(): void {
     this.root.traverse((o) => {
-      if (o instanceof THREE.Mesh) {
+      if (o instanceof THREE.Mesh || o instanceof THREE.Line) {
         o.geometry.dispose();
         (o.material as THREE.Material).dispose();
       }
