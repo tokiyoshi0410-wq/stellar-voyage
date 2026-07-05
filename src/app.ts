@@ -24,6 +24,7 @@ const DRAG_SENS = 0.005;
 const ZOOM_SENS = 0.0015;
 const PICK_ANGLE = 0.02;
 const PLANET_PICK_ANGLE = 0.05;
+const FOCUS_HYSTERESIS = 0.9; // 新しい最近傍星へ切り替える距離マージン（境界での往復防止）
 
 export function showFatal(root: HTMLElement, message: string): void {
   const div = document.createElement('div');
@@ -159,22 +160,23 @@ export async function startApp(root: HTMLElement): Promise<void> {
       nav.focusWorldAu[2] / AU_PER_PC,
     ];
     field.object.position.set(0, 0, 0);
+    const fade = systemFade(nav.viewDistanceAu);
     const near = nearestStarPc(fp, catalog.columns);
     if (near.index !== nav.focusStarIndex) {
       const fi = nav.focusStarIndex;
       const curDist = Math.hypot(
         catalog.columns.x[fi]! - fp[0], catalog.columns.y[fi]! - fp[1], catalog.columns.z[fi]! - fp[2],
       );
-      if (near.distPc < curDist * 0.9) nav.focusStarIndex = near.index; // 10% hysteresis vs. boundary flip-flop
+      // 星系境界での往復切替を防ぐヒステリシス
+      if (near.distPc < curDist * FOCUS_HYSTERESIS) nav.focusStarIndex = near.index;
     }
-    // rebuild the visible system only when on-screen and out of date (skip churn while faded/invisible)
-    if (systemFade(nav.viewDistanceAu) > 0 && currentSystem.starIndex !== nav.focusStarIndex) {
+    // 可視かつ古いときだけ系を再構築（フェード中=不可視での毎フレーム再構築を回避）
+    if (fade > 0 && currentSystem.starIndex !== nav.focusStarIndex) {
       currentSystem = rebuildSystem(nav.focusStarIndex);
     }
     field.setFocus(fp, nav.focusStarIndex);
 
     // --- フェード（ズームアウトで恒星系→星野へ） ----------------------------
-    const fade = systemFade(nav.viewDistanceAu);
     if (systemScene) {
       systemScene.root.traverse((o) => {
         const mat = (o as THREE.Mesh).material;
