@@ -1,0 +1,34 @@
+import { describe, it, expect } from 'vitest';
+import { formatLightTime, scaleInfoFor } from '../../src/edu/scaleInfo';
+
+describe('formatLightTime', () => {
+  it('formats the Earth–Sun light time as 8分19秒', () => {
+    expect(formatLightTime(8.317)).toBe('8分19秒');
+  });
+  it('handles seconds, hours and years ranges', () => {
+    expect(formatLightTime(0.5)).toBe('30秒');
+    expect(formatLightTime(500)).toBe('約8時間');
+    expect(formatLightTime(60 * 24 * 400)).toMatch(/約.*年/);
+  });
+});
+
+describe('scaleInfoFor', () => {
+  it('is the solar stage below 30000 AU with edge-to-edge facts', () => {
+    const info = scaleInfoFor(40);
+    expect(info.stage).toBe('solar');
+    expect(info.title).toBe('太陽系');
+    const joined = info.lines.join(' ');
+    expect(joined).toMatch(/90億km/);
+    expect(joined).toMatch(/約8時間/);
+    expect(joined).toMatch(/8分19秒/);
+  });
+  it('switches solar→interstellar at 30000 AU and →galaxy at 1e6 AU', () => {
+    expect(scaleInfoFor(29999).stage).toBe('solar');
+    expect(scaleInfoFor(30000).stage).toBe('interstellar');
+    expect(scaleInfoFor(1_000_000).stage).toBe('galaxy');
+  });
+  it('interstellar cites the nearest star in light-years; galaxy cites 10万光年', () => {
+    expect(scaleInfoFor(100000).lines.join(' ')).toMatch(/約4\.2年/);
+    expect(scaleInfoFor(2_000_000).lines.join(' ')).toMatch(/10万光年/);
+  });
+});
