@@ -46,6 +46,17 @@ export class SystemScene {
       );
       ring.rotation.x = -Math.PI / 2;
       this.root.add(ring);
+
+      if (p.hasRing) {
+        const r = planetDisplayRadius(p.radiusEarth);
+        const planetRing = new THREE.Mesh(
+          new THREE.RingGeometry(r * 1.3, r * 2.2, 48),
+          new THREE.MeshBasicMaterial({ color: 0xc9b98a, side: THREE.DoubleSide, transparent: true, opacity: 0.7 }),
+        );
+        planetRing.rotation.x = -Math.PI / 2;
+        planetRing.position.set(x, y, z);
+        this.root.add(planetRing);
+      }
     });
 
     this.root.add(new THREE.PointLight(0xffffff, 2, 0, 0));

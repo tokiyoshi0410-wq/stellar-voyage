@@ -23,9 +23,13 @@ export function buildStarGeometry(columns: StarColumns): {
   return { positions, colors, sizes };
 }
 
+export const AU_PER_PC = 206264.8;
+
 export class StarField {
   readonly object: THREE.Points;
   private readonly material: THREE.ShaderMaterial;
+  private focusIndex = -1;
+  private savedSize = 0;
 
   constructor(columns: StarColumns) {
     const { positions, colors, sizes } = buildStarGeometry(columns);
@@ -35,7 +39,9 @@ export class StarField {
     geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
     this.material = new THREE.ShaderMaterial({
       uniforms: {
-        uCameraPos: { value: new THREE.Vector3() },
+        uFocusPc: { value: new THREE.Vector3() },
+        uScaleAuPerPc: { value: AU_PER_PC },
+        uCameraAu: { value: new THREE.Vector3() },
         uPixelScale: { value: 300.0 },
       },
       vertexShader: vert,
@@ -49,9 +55,20 @@ export class StarField {
     this.object.frustumCulled = false;
   }
 
-  updateOrigin(origin: FloatingOrigin): void {
-    (this.material.uniforms.uCameraPos!.value as THREE.Vector3).set(
-      origin.position[0], origin.position[1], origin.position[2],
-    );
+  setFocus(focusPc: [number, number, number], focusIndex: number): void {
+    (this.material.uniforms.uFocusPc!.value as THREE.Vector3).set(focusPc[0], focusPc[1], focusPc[2]);
+    const attr = this.object.geometry.getAttribute('size') as THREE.BufferAttribute;
+    const arr = attr.array as Float32Array;
+    if (this.focusIndex >= 0) arr[this.focusIndex] = this.savedSize; // restore previous
+    if (focusIndex >= 0) { this.savedSize = arr[focusIndex]!; arr[focusIndex] = 0; }
+    this.focusIndex = focusIndex;
+    attr.needsUpdate = true;
   }
+
+  updateCamera(cameraAu: [number, number, number]): void {
+    (this.material.uniforms.uCameraAu!.value as THREE.Vector3).set(cameraAu[0], cameraAu[1], cameraAu[2]);
+  }
+
+  // deprecated no-op — removed together with the app.ts call in Task 9
+  updateOrigin(_origin: FloatingOrigin): void {}
 }
