@@ -27,8 +27,8 @@
 - spec: `docs/superpowers/specs/2026-07-06-stellar-voyage-solar-detail-design.md`
 - plan: `docs/superpowers/plans/2026-07-06-stellar-voyage-solar-detail.md`（全4タスク）
 
-**現 HEAD: `c072069`。範囲 `f704bcb..c072069` = 4タスク + Sun クリック/ラベル fix(d4765c3) + index クロスチェックテスト(659fd85) + user 追加調整(c072069)。すべて `main`・未 push。**
-**追加調整(c072069, user 2026-07-06)**: 太陽の進行方向矢印を削除し「銀河公転の軌道線」(太陽が上に乗る金色の弧)へ置換。惑星ラベルを複数行化(LabelLayer white-space:pre)し **公転を自転の上に・両方 km/h**(カンマ区切り)表示、軌道上の別公転ラベルは廃止。E2E 確認済。※クリック詳細パネルの公転は km/s のまま。
+**現 HEAD: `23c6c66`。範囲 `f704bcb..23c6c66` = 4タスク + Sun クリック/ラベル fix(d4765c3) + index クロスチェックテスト(659fd85) + user 追加調整(c072069 矢印→軌道線/km/h 縦並び, 23c6c66 パネル公転も km/h 統一[formatOrbitalKmH helper])。すべて `main`・未 push。**
+**追加調整(c072069, user 2026-07-06)**: 太陽の進行方向矢印を削除し「銀河公転の軌道線」(太陽が上に乗る金色の弧)へ置換。惑星ラベルを複数行化(LabelLayer white-space:pre)し **公転を自転の上に・両方 km/h**(カンマ区切り)表示、軌道上の別公転ラベルは廃止。さらに(23c6c66)クリック詳細パネルの公転も km/s→km/h に統一(solarFacts の formatOrbitalKmH helper を label/panel 共用)。E2E 確認済。
 opus 最終レビュー「Ready to merge — YES」（Critical/Important 0、5 named risk[solar-only gate/PLANET_FACTS index 整合/Sun クリック cone/facts無し不変/ヘルパ数値]健全）。173/173・tsc・build(495KB) 緑。Playwright E2E で全受入基準検証（公転/自転/逆回転ラベル・太陽の進行方向矢印・水星クリック[公転47.4/自転11/最接近9100万km/光5分4秒/新幹線35年]・地球[母星]・太陽クリック[銀河公転]）。実装/レビュー=sonnet、最終=opus。
 E2E-driven fix(d4765c3): 太陽が点ピッキングで背後の背景星に負け拾えない→原点方向の角度判定(SUN_PICK_ANGLE=0.06)で pickStar 前に先取り＋常時ラベル短縮。所見: overview(viewDist40) は内惑星が中心に角度密集しラベルが重なる（拡大で分離＝標準UX、太陽も拡大時にクリック可）。deferred follow-up は progress.md 参照。
 
