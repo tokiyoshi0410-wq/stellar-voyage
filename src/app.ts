@@ -214,11 +214,12 @@ export async function startApp(root: HTMLElement): Promise<void> {
         labelItems.push({ text: `${name}  ${(distSolPc * PARSEC_IN_LY).toFixed(1)} 光年`, worldPos });
       }
     }
-    labels.render(labelItems, engine.camera, engine.renderer.domElement);
-
     slider.setReadout(speedFromSlider(slider.value()), starDisplayName(currentSystem.starIndex, currentSystem.starName));
 
     engine.render();
+    // ラベルは engine.render() の後に投影する。render 内で camera.matrixWorldInverse が更新されるため、
+    // 星/惑星と同じ最新姿勢で位置が決まり、ドラッグ/ズーム中に1フレーム遅れて追従するのを防ぐ。
+    labels.render(labelItems, engine.camera, engine.renderer.domElement);
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
