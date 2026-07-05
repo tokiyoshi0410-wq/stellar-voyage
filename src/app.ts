@@ -2,38 +2,23 @@ import * as THREE from 'three';
 import { Renderer, isWebGL2Available } from './engine/Renderer';
 import { FloatingOrigin } from './engine/FloatingOrigin';
 import { StarCatalog } from './catalog/StarCatalog';
-import { StarField } from './starfield/StarField';
-import { ShipController } from './flight/ShipController';
-import { InputController } from './flight/InputController';
-import { pickStar } from './selection/Picker';
-import { HUD } from './ui/HUD';
-import { InfoPanel } from './ui/InfoPanel';
-import { SystemHud } from './ui/SystemHud';
-import { describeStar } from './ui/format';
+import { StarField, AU_PER_PC } from './starfield/StarField';
 import { buildStellarSystem } from './system/StellarSystem';
 import { SystemScene } from './system/SystemScene';
-import { NORMAL_BAND } from './flight/ShipController';
-import { pickPlanet } from './system/planetPick';
-import { PlanetPanel } from './ui/PlanetPanel';
 import { loadExoplanets } from './catalog/exoplanets';
 import type { Planet } from './system/types';
+import { NavigationController } from './nav/NavigationController';
+import { InputMapper } from './nav/InputMapper';
+import { orbitCameraPosition } from './nav/orbitCamera';
+import { systemFade } from './nav/fade';
+import { speedFromSlider } from './nav/speed';
+import { SpeedSlider } from './ui/SpeedSlider';
+import { ControlHints } from './ui/ControlHints';
 
-const LOOK_SENSITIVITY = 0.0025;
-const PICK_ANGLE = 0.01; // rad
-const PLANET_PICK_ANGLE = 0.05; // rad（惑星は見かけ半径が小さいため星より広めの許容角）
-// system ビュー（AU スケール）の移動速度は物理単位からの厳密な導出ではなく、
-// Playwright E2E で「恒星まで数秒で段階的に接近し、オーバーシュートしない」
-// ことを基準に実機チューニングした経験値。ship.update() は galaxy 用に
-// TIME_COMPRESSION で圧縮されたゲーム単位の変位を返すだけで、pc/AU の物理的な
-// 単位変換をしているわけではない。AU_PER_PC は「AU スケールで扱いやすい大きさに
-// 変位を持ち上げるための数値上の便宜的係数」であり、BASE_SCALE と掛け合わせた
-// SYSTEM_SPEED_SCALE も同様に体感チューニング値。throttle は system モードでは
-// NORMAL_BAND 以下（sublight）にクランプ済み。
-const AU_PER_PC = 206264.8;
-const BASE_SCALE = 8e-6; // E2E で調整（6e-5 は速すぎて系を約 1 秒で通過した）
-const SYSTEM_SPEED_SCALE = BASE_SCALE * AU_PER_PC; // ≈ 1.65
-
-type AppMode = 'galaxy' | 'system';
+const DRAG_SENS = 0.005;
+const ZOOM_SENS = 0.0015;
+// 画面ピクセル→星クリック判定の許容半径（Task 10 のクリック選択で使用予定）。
+const PIXEL_TO_STAR = 300;
 
 export function showFatal(root: HTMLElement, message: string): void {
   const div = document.createElement('div');
@@ -52,163 +37,95 @@ export async function startApp(root: HTMLElement): Promise<void> {
   }
 
   const engine = new Renderer(root);
+  // カメラの AU 世界位置（Task 10 のフォーカス切替で使用予定。現時点では未参照）。
   const origin = new FloatingOrigin();
-  const ship = new ShipController(origin);
-  const input = new InputController(engine.renderer.domElement);
-  const hud = new HUD(root);
-  const panel = new InfoPanel(root);
-  const systemHud = new SystemHud(root);
-  const planetPanel = new PlanetPanel(root);
+  const nav = new NavigationController();
+  const input = new InputMapper(engine.renderer.domElement);
+  const slider = new SpeedSlider(root);
+  new ControlHints(root);
 
-  engine.renderer.domElement.tabIndex = 0;
-  engine.renderer.domElement.style.outline = 'none';
-  engine.renderer.domElement.addEventListener('click', () => {
-    engine.renderer.domElement.requestPointerLock?.();
-  });
+  engine.renderer.domElement.style.touchAction = 'none';
+
+  window.addEventListener('resize', () => engine.resize(window.innerWidth, window.innerHeight));
 
   let catalog: StarCatalog;
-  let field: StarField;
   try {
     catalog = await StarCatalog.load('/data/hyg.bin', '/data/hyg-names.json');
   } catch {
     showFatal(root, '星カタログの読み込みに失敗しました。`npm run build:catalog` を実行してください。');
     return;
   }
-  field = new StarField(catalog.columns);
-  engine.scene.add(field.object);
 
   const exoplanets: Record<number, Planet[]> = await loadExoplanets('/data/exoplanets.json');
 
-  window.addEventListener('resize', () => engine.resize(window.innerWidth, window.innerHeight));
+  const field = new StarField(catalog.columns);
+  engine.scene.add(field.object);
 
-  // --- mode 状態 -------------------------------------------------------
-  let mode: AppMode = 'galaxy';
   let systemScene: SystemScene | null = null;
-  let savedPos: [number, number, number] | null = null;
-  let savedQuat: THREE.Quaternion | null = null;
-  let savedThrottle: number | null = null;
-  const yawPitch = { yaw: 0, pitch: 0 };
-
-  function enterSystem(index: number): void {
-    if (mode !== 'galaxy') return; // 二重クリックによる SystemScene リーク防止
-
-    // galaxy のカメラ位置・向き・throttle を退避
-    savedPos = [origin.position[0], origin.position[1], origin.position[2]];
-    savedQuat = ship.orientation.clone();
-    savedThrottle = ship.throttle;
-
-    const system = buildStellarSystem(catalog.columns, index, catalog.nameOf(index), exoplanets);
-    systemScene = new SystemScene(system);
-    engine.scene.remove(field.object);
-    engine.scene.add(systemScene.root);
-
-    // system ビューは AU 単位・実座標。恒星の少し手前に配置し、原点向きにリセット。
-    origin.setPosition(0, 0, 8);
-    ship.orientation.identity();
-    yawPitch.yaw = 0;
-    yawPitch.pitch = 0;
-    engine.camera.position.set(0, 0, 8);
-    // galaxy 側で溜まった未消費のポインタ移動量を破棄（次フレームで yaw/pitch を巻き戻さないため）
-    input.consumePointerDelta();
-    // system 突入時に galaxy の throttle を持ち越さない（星まで加速したまま突入すると即座に飛び出す）
-    ship.throttle = 0;
-
-    systemHud.show(system.starName, exitSystem);
-    panel.hide();
-    hud.hide();
-    planetPanel.hide();
-    mode = 'system';
-  }
-
-  function exitSystem(): void {
+  function rebuildSystem(index: number) {
     if (systemScene) {
       engine.scene.remove(systemScene.root);
       systemScene.dispose();
-      systemScene = null;
     }
-    engine.scene.add(field.object);
-
-    if (savedPos) {
-      origin.setPosition(savedPos[0], savedPos[1], savedPos[2]);
-    }
-    if (savedQuat) {
-      ship.orientation.copy(savedQuat);
-      const euler = new THREE.Euler().setFromQuaternion(savedQuat, 'YXZ');
-      yawPitch.yaw = euler.y;
-      yawPitch.pitch = euler.x;
-    }
-    if (savedThrottle != null) {
-      ship.throttle = savedThrottle;
-    }
-    savedPos = null;
-    savedQuat = null;
-    savedThrottle = null;
-    // galaxy は floating origin（カメラはワールド原点固定）に戻す
-    engine.camera.position.set(0, 0, 0);
-
-    systemHud.hide();
-    hud.show();
-    planetPanel.hide();
-    mode = 'galaxy';
+    const sys = buildStellarSystem(catalog.columns, index, catalog.nameOf(index), exoplanets);
+    systemScene = new SystemScene(sys);
+    engine.scene.add(systemScene.root);
+    return sys;
   }
 
-  // クリックで最近傍の星（galaxy）または惑星（system）を選択
-  engine.renderer.domElement.addEventListener('pointerdown', () => {
-    const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(ship.orientation);
-    if (mode === 'galaxy') {
-      const idx = pickStar(
-        [origin.position[0], origin.position[1], origin.position[2]],
-        [dir.x, dir.y, dir.z], catalog.columns, PICK_ANGLE,
-      );
-      if (idx != null) {
-        panel.show(describeStar(catalog.columns, idx, catalog.nameOf(idx)), () => enterSystem(idx));
-      }
-    } else if (systemScene) {
-      const currentSystem = systemScene.system;
-      const pIdx = pickPlanet(
-        [origin.position[0], origin.position[1], origin.position[2]],
-        [dir.x, dir.y, dir.z], currentSystem, PLANET_PICK_ANGLE,
-      );
-      if (pIdx != null) {
-        const planet = currentSystem.planets[pIdx]!;
-        planetPanel.show(planet);
-        systemHud.setTarget(planet.name);
-      }
-    }
-  });
+  // 起動: 太陽（HYG index 0）を斜め上から見下ろす太陽系ビューから開始。
+  nav.setFocus(0, [0, 0, 0]);
+  let currentSystem = rebuildSystem(0);
+  field.setFocus([0, 0, 0], 0); // 太陽は系ビューで表示するため星野側では隠す
+
+  const camAu = new THREE.Vector3();
 
   let last = performance.now();
   function frame(now: number): void {
     const dt = Math.min((now - last) / 1000, 0.1);
     last = now;
 
-    const { dx, dy } = input.consumePointerDelta();
-    yawPitch.yaw -= dx * LOOK_SENSITIVITY;
-    yawPitch.pitch -= dy * LOOK_SENSITIVITY;
-    yawPitch.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, yawPitch.pitch));
-    const euler = new THREE.Euler(yawPitch.pitch, yawPitch.yaw, 0, 'YXZ');
-    ship.orientation.setFromEuler(euler);
+    // --- 入力 → 航法状態 -------------------------------------------------
+    const drag = input.consumeDrag();
+    nav.orbit(-drag.dx * DRAG_SENS, -drag.dy * DRAG_SENS);
+    const w = input.consumeWheel();
+    if (w) nav.zoom(Math.exp(w * ZOOM_SENS));
+    const mv = input.movement();
+    nav.translate(mv.forward, mv.right, speedFromSlider(slider.value()), dt);
 
-    ship.throttle = input.applyThrottle(ship.throttle, dt);
+    // --- 周回カメラ（原点 = フォーカス点） --------------------------------
+    const { position, target } = orbitCameraPosition(
+      [0, 0, 0], nav.orbitYaw, nav.orbitPitch, nav.viewDistanceAu,
+    );
+    engine.camera.position.set(...position);
+    engine.camera.lookAt(target[0], target[1], target[2]);
+    camAu.set(...position);
 
-    if (mode === 'galaxy') {
-      ship.update(dt);
-    } else {
-      // system ビューはワープ域を許容しない（AU スケールでは即座に飛び出してしまう）。
-      // throttle を sublight 域（NORMAL_BAND 以下）に丸めてから縮小 dt で更新する。
-      ship.throttle = Math.min(ship.throttle, NORMAL_BAND);
-      ship.update(dt * SYSTEM_SPEED_SCALE);
+    // --- 星野（フォーカス相対描画） ---------------------------------------
+    const fp: [number, number, number] = [
+      nav.focusWorldAu[0] / AU_PER_PC,
+      nav.focusWorldAu[1] / AU_PER_PC,
+      nav.focusWorldAu[2] / AU_PER_PC,
+    ];
+    field.object.position.set(0, 0, 0);
+    field.setFocus(fp, nav.focusStarIndex);
+    field.updateCamera([camAu.x, camAu.y, camAu.z]);
+
+    // --- フェード（ズームアウトで恒星系→星野へ） ----------------------------
+    const fade = systemFade(nav.viewDistanceAu);
+    if (systemScene) {
+      systemScene.root.traverse((o) => {
+        const mat = (o as THREE.Mesh).material;
+        if (!mat) return;
+        for (const m of Array.isArray(mat) ? mat : [mat]) {
+          m.transparent = true;
+          m.opacity = fade;
+        }
+      });
+      systemScene.root.visible = fade > 0;
     }
 
-    engine.camera.quaternion.copy(ship.orientation);
-
-    if (mode === 'galaxy') {
-      field.updateOrigin(origin);
-      hud.update(ship.speedC, ship.isWarp, null);
-    } else {
-      // system ビューは近距離 AU スケールなのでカメラをワールド座標に直接置く
-      engine.camera.position.set(origin.position[0], origin.position[1], origin.position[2]);
-    }
+    slider.setReadout(speedFromSlider(slider.value()), currentSystem.starName);
 
     engine.render();
     requestAnimationFrame(frame);

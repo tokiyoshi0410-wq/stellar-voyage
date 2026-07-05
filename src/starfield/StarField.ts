@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import type { StarColumns } from '../catalog/format';
 import { bvToRGB } from '../astro/color';
-import type { FloatingOrigin } from '../engine/FloatingOrigin';
 import vert from './starfield.vert.glsl?raw';
 import frag from './starfield.frag.glsl?raw';
 
@@ -68,7 +67,4 @@ export class StarField {
   updateCamera(cameraAu: [number, number, number]): void {
     (this.material.uniforms.uCameraAu!.value as THREE.Vector3).set(cameraAu[0], cameraAu[1], cameraAu[2]);
   }
-
-  // deprecated no-op — removed together with the app.ts call in Task 9
-  updateOrigin(_origin: FloatingOrigin): void {}
 }
