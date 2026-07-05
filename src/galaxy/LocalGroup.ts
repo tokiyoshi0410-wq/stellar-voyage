@@ -19,7 +19,7 @@ export class LocalGroup {
   constructor() {
     this.object = new THREE.Group();
 
-    // 天の川銀河: 太陽(原点=腕の上)に合わせて円盤中心を -SUN_DISK_OFFSET へずらす
+    // 天の川銀河: 太陽(原点)が銀河中心でなく銀河内の途中に来るよう円盤中心を -SUN_DISK_OFFSET へずらす
     this.milkyWay = new GalaxyDisk(MILKY_WAY, 1);
     this.milkyWay.object.position.set(-SUN_DISK_OFFSET, 0, 0);
     this.milkyWay.object.rotation.x = 0.5;
@@ -32,15 +32,15 @@ export class LocalGroup {
     this.andromeda.object.rotation.z = 0.3;
     this.object.add(this.andromeda.object);
 
-    // 現在地マーカー（天の川円盤内の一点。傾きを継承させるため milkyWay の子）
+    // 現在地マーカー(太陽): group 原点(=太陽=カメラ注視点=近傍星野=ズーム中心)に直接置く。
+    // 円盤(milkyWay)の傾きに依存させず原点一致を構造的に保証する（円盤中心は太陽から
+    // SUN_DISK_OFFSET 離れている＝太陽は銀河中心ではなく銀河内の途中にいる）。
     this.marker = new THREE.Mesh(
       new THREE.SphereGeometry(MILKY_WAY.radiusAu * 0.02, 8, 8),
       new THREE.MeshBasicMaterial({ color: 0xffd479, transparent: true }),
     );
-    // milkyWay が -SUN_DISK_OFFSET にずれているので、腕上 (+SUN_DISK_OFFSET) のマーカーの
-    // world 位置は group 原点(=太陽/近傍星野/ズーム中心)にちょうど一致する。
-    this.marker.position.set(SUN_DISK_OFFSET, 0, 0);
-    this.milkyWay.object.add(this.marker);
+    this.marker.position.set(0, 0, 0);
+    this.object.add(this.marker);
   }
 
   setOpacity(o: number): void {
