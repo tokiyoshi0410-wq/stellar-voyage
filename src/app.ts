@@ -20,7 +20,6 @@ import { InfoPanel } from './ui/InfoPanel';
 import { PlanetPanel } from './ui/PlanetPanel';
 import { describeStar, formatAuDistance, starDisplayName } from './ui/format';
 import { nearestStarPc } from './nav/nearestStar';
-import { orbitPosition, animatedPhase } from './system/orbit';
 import { LabelLayer, type LabelItem } from './ui/LabelLayer';
 import { nearestStarsPc } from './nav/nearestStars';
 import { PARSEC_IN_LY } from './astro/spectral';
@@ -130,8 +129,10 @@ export async function startApp(root: HTMLElement): Promise<void> {
     const rayDir: [number, number, number] = [rc.ray.direction.x, rc.ray.direction.y, rc.ray.direction.z];
     const fade = systemFade(nav.viewDistanceAu);
 
-    if (fade > 0.5) {
-      const pIdx = pickPlanet([camAu.x, camAu.y, camAu.z], rayDir, currentSystem, PLANET_PICK_ANGLE, animT);
+    if (fade > 0.5 && systemScene) {
+      const ss = systemScene;
+      const positions = currentSystem.planets.map((_, i) => ss.planetWorldPos(i));
+      const pIdx = pickPlanet([camAu.x, camAu.y, camAu.z], rayDir, positions, PLANET_PICK_ANGLE);
       if (pIdx != null) {
         const planet = currentSystem.planets[pIdx]!;
         if (currentSystem.starIndex === 0) {
@@ -144,8 +145,10 @@ export async function startApp(root: HTMLElement): Promise<void> {
       }
 
       if (currentSystem.starIndex === 0) {
-        const camLen = Math.hypot(camAu.x, camAu.y, camAu.z) || 1;
-        const sunDot = (-camAu.x * rayDir[0] - camAu.y * rayDir[1] - camAu.z * rayDir[2]) / camLen;
+        const sun = ss.sunWorldPos();
+        const dx = sun[0] - camAu.x, dy = sun[1] - camAu.y, dz = sun[2] - camAu.z;
+        const dlen = Math.hypot(dx, dy, dz) || 1;
+        const sunDot = (dx * rayDir[0] + dy * rayDir[1] + dz * rayDir[2]) / dlen;
         if (sunDot > Math.cos(SUN_PICK_ANGLE)) {
           planetPanel.showText(sunGalacticText());
           infoPanel.hide();
@@ -255,21 +258,19 @@ export async function startApp(root: HTMLElement): Promise<void> {
     localGroup.setPosition(-nav.focusWorldAu[0], -nav.focusWorldAu[1], -nav.focusWorldAu[2]);
     field.setOpacity(1 - lgFade);
     const labelItems: LabelItem[] = [];
-    if (fade > 0.5) {
+    if (fade > 0.5 && systemScene) {
+      const ss = systemScene;
       const isSolar = currentSystem.starIndex === 0;
       if (isSolar) {
         labelItems.push({
           text: `太陽 ・ 銀河を ${SUN_FACTS.galacticSpeedKmS}km/s で移動中（クリックで詳細）`,
-          worldPos: [0, 0, 0],
+          worldPos: ss.sunWorldPos(),
         });
       } else {
-        labelItems.push({ text: starDisplayName(currentSystem.starIndex, currentSystem.starName), worldPos: [0, 0, 0] });
+        labelItems.push({ text: starDisplayName(currentSystem.starIndex, currentSystem.starName), worldPos: ss.sunWorldPos() });
       }
       currentSystem.planets.forEach((p, i) => {
-        const [px, py, pz] = orbitPosition(
-          p.semiMajorAxisAu,
-          animatedPhase(currentSystem.starIndex, i, p.semiMajorAxisAu, animT),
-        );
+        const [px, py, pz] = ss.planetWorldPos(i);
         if (isSolar) {
           const f = PLANET_FACTS[i]!;
           const rotKmh = f.rotationSpeedKmH.toLocaleString('en-US');
