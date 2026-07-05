@@ -19,7 +19,7 @@ import { InfoPanel } from './ui/InfoPanel';
 import { PlanetPanel } from './ui/PlanetPanel';
 import { describeStar, formatAuDistance, starDisplayName } from './ui/format';
 import { nearestStarPc } from './nav/nearestStar';
-import { orbitPosition, planetPhase } from './system/orbit';
+import { orbitPosition, animatedPhase } from './system/orbit';
 import { LabelLayer, type LabelItem } from './ui/LabelLayer';
 import { nearestStarsPc } from './nav/nearestStars';
 import { PARSEC_IN_LY } from './astro/spectral';
@@ -127,7 +127,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
     const fade = systemFade(nav.viewDistanceAu);
 
     if (fade > 0.5) {
-      const pIdx = pickPlanet([camAu.x, camAu.y, camAu.z], rayDir, currentSystem, PLANET_PICK_ANGLE);
+      const pIdx = pickPlanet([camAu.x, camAu.y, camAu.z], rayDir, currentSystem, PLANET_PICK_ANGLE, animT);
       if (pIdx != null) {
         const planet = currentSystem.planets[pIdx]!;
         if (currentSystem.starIndex === 0) {
@@ -176,9 +176,11 @@ export async function startApp(root: HTMLElement): Promise<void> {
   });
 
   let last = performance.now();
+  let animT = 0;
   function frame(now: number): void {
     const dt = Math.min((now - last) / 1000, 0.1);
     last = now;
+    animT += dt;
 
     // --- 入力 → 航法状態 -------------------------------------------------
     const drag = input.consumeDrag();
@@ -221,6 +223,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
 
     // --- フェード（ズームアウトで恒星系→星野へ） ----------------------------
     if (systemScene) {
+      systemScene.update(animT);
       systemScene.root.traverse((o) => {
         const mat = (o as THREE.Mesh).material;
         if (!mat) return;
@@ -258,8 +261,10 @@ export async function startApp(root: HTMLElement): Promise<void> {
         labelItems.push({ text: starDisplayName(currentSystem.starIndex, currentSystem.starName), worldPos: [0, 0, 0] });
       }
       currentSystem.planets.forEach((p, i) => {
-        const phase = planetPhase(currentSystem.starIndex, i);
-        const [px, py, pz] = orbitPosition(p.semiMajorAxisAu, phase);
+        const [px, py, pz] = orbitPosition(
+          p.semiMajorAxisAu,
+          animatedPhase(currentSystem.starIndex, i, p.semiMajorAxisAu, animT),
+        );
         if (isSolar) {
           const f = PLANET_FACTS[i]!;
           const rotKmh = f.rotationSpeedKmH.toLocaleString('en-US');
