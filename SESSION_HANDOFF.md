@@ -122,6 +122,7 @@ opus 最終レビュー通過。124/124 テスト・tsc・build 緑。Playwright
   `npm run dev` はそのまま動く。再生成が要れば `npm run build:catalog` / `build:exoplanets`。
 - **テスト**: `npm test`（vitest、現在 93 passing）。型: `npx tsc --noEmit`。
 - **dev サーバー**: `npm run dev` → `http://localhost:5180`。
+- **実装ゾーン分離（描画ミルストーン共通の方針）**: 純粋ロジック（数値境界・決定論生成・構造や uniform 反映・座標計算）は superpowers TDD で**厳密に固める**。一方、**見た目の数値（色・サイズ・傾き・配置・pixelScale・見栄えパラメータ定数）はテストで assert しない** — コントローラが Playwright E2E で目視調整するため。テストは「値を変えても壊れない構造的不変条件」だけを検証する。サブエージェント派遣時はこの TDD 厳密／実機調整の区分を brief に必ず明示する（詳細は各 plan 冒頭「実装ポリシー」節）。
 
 ## Playwright E2E 検証のコツ（描画タスク後）
 
