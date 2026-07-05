@@ -27,7 +27,7 @@
 - spec: `docs/superpowers/specs/2026-07-05-stellar-voyage-localgroup-galaxies-design.md`
 - plan: `docs/superpowers/plans/2026-07-05-stellar-voyage-localgroup-galaxies.md`（全6タスク + 「実装ポリシー」節: 純粋ロジック=TDD厳密 / 見た目=実機調整）
 
-**現 HEAD: `cce074b`。範囲 `176614b..cce074b` = 6タスク + midpoint/marker-fade/scratch fix + 二重太陽 fix(a27672e) + marker 構造堅牢化(cce074b)。すべて `main`・未 push。**
+**現 HEAD: `c815248`。範囲 `176614b..c815248` = 6タスク + midpoint/marker-fade/scratch fix + 二重太陽 fix(a27672e) + marker 構造堅牢化(cce074b) + 縮尺バー概念スケール整合(c815248: localgroup 段のみ縮尺バー非表示=実距離が概念ラベル「250万光年」と食い違うのを解消)。すべて `main`・未 push。**
 opus 最終レビュー「Ready to merge — YES」（Critical/Important 0、4 named risk[概念スケール float 精度/クロスフェード境界/寿命/削除完全性]すべて健全と検証）。158/158・tsc・build(487KB) 緑。Playwright E2E で全受入基準（2つの渦巻き銀河・現在地/約250万光年ラベル・双方向クロスフェード・ドラッグ回転・全 overlay 非干渉・console は favicon404 のみ）検証済。実装/レビュー=sonnet、最終=opus。
 **二重太陽 bug fix (user 報告 2026-07-06)**: 局部銀河群で天の川の中心(バルジ)を原点(=太陽=カメラ注視点=近傍星野=ズーム中心)に置いていたため、原点の太陽と現在地マーカー(腕にオフセット)が二重に見えズームインで銀河中心が太陽系になった。天の川円盤を SUN_DISK_OFFSET(=radius*0.55)だけずらし、太陽(原点)が銀河中心でなく銀河内の途中に来るよう修正(a27672e)、マーカーは group 原点直下に固定して傾き非依存で構造保証(cce074b)。opus 座標系整合監査で全ズーム段・pan とも同クラスの他バグ無し・pan divergence は非バグと確認。E2E で二重太陽解消を確認。詳細は progress.md。
 **Phase 2（次のミルストーン）**: アンドロメダへ飛んで移動（viewDist 連動の速度スケーリング/ワープ機構が必須）＋アンドロメダ内部の手続き生成星野（天の川 HYG と対称の別世界）。user 承認済み方針。deferred minors（除算ガード/ANDROMEDA テスト/tinyColumns dup）は progress.md 参照。
