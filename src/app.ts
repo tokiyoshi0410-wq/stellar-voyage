@@ -29,6 +29,7 @@ import { scaleBarFor } from './edu/scaleBar';
 import { ScaleBar } from './ui/ScaleBar';
 import { LocalGroup } from './galaxy/LocalGroup';
 import { localGroupFade } from './nav/localGroupFade';
+import { PLANET_FACTS, SUN_FACTS, earthClosestApproachAu } from './system/solarFacts';
 
 const DRAG_SENS = 0.005;
 const ZOOM_SENS = 0.0015;
@@ -121,7 +122,12 @@ export async function startApp(root: HTMLElement): Promise<void> {
     if (fade > 0.5) {
       const pIdx = pickPlanet([camAu.x, camAu.y, camAu.z], rayDir, currentSystem, PLANET_PICK_ANGLE);
       if (pIdx != null) {
-        planetPanel.show(currentSystem.planets[pIdx]!);
+        const planet = currentSystem.planets[pIdx]!;
+        if (currentSystem.starIndex === 0) {
+          planetPanel.show(planet, PLANET_FACTS[pIdx], earthClosestApproachAu(planet.semiMajorAxisAu));
+        } else {
+          planetPanel.show(planet);
+        }
         infoPanel.hide();
         return;
       }
@@ -139,8 +145,17 @@ export async function startApp(root: HTMLElement): Promise<void> {
     ];
     const sIdx = pickStar(camPc, rayDir, catalog.columns, PICK_ANGLE);
     if (sIdx != null) {
-      infoPanel.show(describeStar(catalog.columns, sIdx, starDisplayName(sIdx, catalog.nameOf(sIdx))));
-      planetPanel.hide();
+      if (currentSystem.starIndex === 0 && sIdx === 0) {
+        planetPanel.showText(
+          `太陽\n銀河公転: ${SUN_FACTS.galacticSpeedKmS} km/s（銀河を約${(SUN_FACTS.galacticPeriodYr / 1e8).toPrecision(2)}億年で1周）\n` +
+          `銀河中心まで: 約${SUN_FACTS.galacticCenterLy / 1e4}万光年\n` +
+          `自転: 赤道 約${SUN_FACTS.rotationSpeedKmH} km/h`,
+        );
+        infoPanel.hide();
+      } else {
+        infoPanel.show(describeStar(catalog.columns, sIdx, starDisplayName(sIdx, catalog.nameOf(sIdx))));
+        planetPanel.hide();
+      }
     } else {
       infoPanel.hide();
       planetPanel.hide();
@@ -220,10 +235,29 @@ export async function startApp(root: HTMLElement): Promise<void> {
     field.setOpacity(1 - lgFade);
     const labelItems: LabelItem[] = [];
     if (fade > 0.5) {
-      labelItems.push({ text: starDisplayName(currentSystem.starIndex, currentSystem.starName), worldPos: [0, 0, 0] });
+      const isSolar = currentSystem.starIndex === 0;
+      if (isSolar) {
+        labelItems.push({
+          text: `太陽 ・ 公転 ${SUN_FACTS.galacticSpeedKmS}km/s（銀河を約${(SUN_FACTS.galacticPeriodYr / 1e8).toPrecision(2)}億年で1周）・ 自転 赤道約${SUN_FACTS.rotationSpeedKmH}km/h`,
+          worldPos: [0, 0, 0],
+        });
+      } else {
+        labelItems.push({ text: starDisplayName(currentSystem.starIndex, currentSystem.starName), worldPos: [0, 0, 0] });
+      }
       currentSystem.planets.forEach((p, i) => {
-        const [px, py, pz] = orbitPosition(p.semiMajorAxisAu, planetPhase(currentSystem.starIndex, i));
-        labelItems.push({ text: `${p.name}  ${formatAuDistance(p.semiMajorAxisAu)}`, worldPos: [px, py, pz] });
+        const phase = planetPhase(currentSystem.starIndex, i);
+        const [px, py, pz] = orbitPosition(p.semiMajorAxisAu, phase);
+        if (isSolar) {
+          const f = PLANET_FACTS[i]!;
+          labelItems.push({
+            text: `${p.name}  ${formatAuDistance(p.semiMajorAxisAu)} ・ 自転 ${f.rotationSpeedKmH}km/h${f.retrograde ? '(逆)' : ''}`,
+            worldPos: [px, py, pz],
+          });
+          const [ox, oy, oz] = orbitPosition(p.semiMajorAxisAu, phase + Math.PI / 2);
+          labelItems.push({ text: `公転 ${f.orbitalSpeedKmS}km/s`, worldPos: [ox, oy, oz] });
+        } else {
+          labelItems.push({ text: `${p.name}  ${formatAuDistance(p.semiMajorAxisAu)}`, worldPos: [px, py, pz] });
+        }
       });
     } else if (scaleInfo.stage !== 'galaxy' && scaleInfo.stage !== 'localgroup') {
       const cols = catalog.columns;
