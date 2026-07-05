@@ -13,7 +13,8 @@ function sysOneOceanPlanet(): StellarSystem {
 describe('SystemScene orbit ring visibility', () => {
   it('draws the orbit ring in the planet type color at high opacity', () => {
     const scene = new SystemScene(sysOneOceanPlanet());
-    const ring = scene.root.children.find(
+    // 軌道リングは travelGroup（root.children[0]）配下
+    const ring = scene.root.children[0]!.children.find(
       (o): o is THREE.Mesh => o instanceof THREE.Mesh && o.geometry instanceof THREE.RingGeometry,
     )!;
     const mat = ring.material as THREE.MeshBasicMaterial;

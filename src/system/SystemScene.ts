@@ -4,6 +4,7 @@ import { orbitPosition, planetPhase, animatedPhase } from './orbit';
 import { makePlanetMaterial } from '../planets/PlanetMaterial';
 import {
   galacticPathPoint, galacticMarkerParam, GAL_ARC_SPAN, GAL_MARKER_COUNT, GAL_FLOW_SPEED,
+  systemTravelParam, SYSTEM_TRAVEL_SPEED,
 } from './galacticPath';
 
 export function planetTypeColor(type: PlanetType): number {
@@ -25,13 +26,17 @@ export class SystemScene {
   readonly planetMeshes: THREE.Mesh[] = [];
   readonly galMarkers: THREE.Mesh[] = [];
   private readonly ringMeshes = new Map<number, THREE.Mesh>();
+  private readonly travelGroup = new THREE.Group();
+  private readonly _scratch = new THREE.Vector3();
 
   constructor(readonly system: StellarSystem) {
+    this.root.add(this.travelGroup);
+
     const star = new THREE.Mesh(
       new THREE.SphereGeometry(0.3, 32, 24),
       new THREE.MeshBasicMaterial({ color: 0xfff2cc }),
     );
-    this.root.add(star);
+    this.travelGroup.add(star);
 
     system.planets.forEach((p, i) => {
       const [x, y, z] = orbitPosition(p.semiMajorAxisAu, planetPhase(system.starIndex, i));
@@ -43,7 +48,7 @@ export class SystemScene {
       mesh.position.set(x, y, z);
       mesh.userData.planetIndex = i;
       this.planetMeshes.push(mesh);
-      this.root.add(mesh);
+      this.travelGroup.add(mesh);
 
       const ringWidth = Math.max(0.01, p.semiMajorAxisAu * 0.01);
       const ring = new THREE.Mesh(
@@ -53,7 +58,7 @@ export class SystemScene {
         }),
       );
       ring.rotation.x = -Math.PI / 2;
-      this.root.add(ring);
+      this.travelGroup.add(ring);
 
       if (p.hasRing) {
         const r = planetDisplayRadius(p.radiusEarth);
@@ -64,7 +69,7 @@ export class SystemScene {
         planetRing.rotation.x = -Math.PI / 2;
         planetRing.position.set(x, y, z);
         this.ringMeshes.set(i, planetRing);
-        this.root.add(planetRing);
+        this.travelGroup.add(planetRing);
       }
     });
 
@@ -79,12 +84,10 @@ export class SystemScene {
         new THREE.BufferGeometry().setFromPoints(pts),
         new THREE.LineBasicMaterial({ color: 0xffd479, transparent: true, opacity: 0.7 }),
       );
-      orbitLine.rotation.x = 0.35;
       this.root.add(orbitLine);
 
       // 道標マーカー: 金の弧に沿って流れて太陽の移動を示す。弧と同じ傾きのグループ配下。
       const markerGroup = new THREE.Group();
-      markerGroup.rotation.x = 0.35;
       for (let k = 0; k < GAL_MARKER_COUNT; k++) {
         const m = new THREE.Mesh(
           new THREE.SphereGeometry(0.4, 12, 8),
@@ -98,7 +101,7 @@ export class SystemScene {
       this.root.add(markerGroup);
     }
 
-    this.root.add(new THREE.PointLight(0xffffff, 2, 0, 0));
+    this.travelGroup.add(new THREE.PointLight(0xffffff, 2, 0, 0));
   }
 
   update(t: number): void {
@@ -110,11 +113,22 @@ export class SystemScene {
       this.planetMeshes[i]!.position.set(x, y, z);
       this.ringMeshes.get(i)?.position.set(x, y, z);
     });
+    if (this.system.starIndex === 0) {
+      const [tx, ty, tz] = galacticPathPoint(systemTravelParam(t, SYSTEM_TRAVEL_SPEED));
+      this.travelGroup.position.set(tx, ty, tz);
+    }
+  }
 
-    this.galMarkers.forEach((m, k) => {
-      const [x, y, z] = galacticPathPoint(galacticMarkerParam(k, GAL_MARKER_COUNT, t, GAL_FLOW_SPEED));
-      m.position.set(x, y, z);
-    });
+  planetWorldPos(i: number): [number, number, number] {
+    this.root.updateWorldMatrix(true, true);
+    this.planetMeshes[i]!.getWorldPosition(this._scratch);
+    return [this._scratch.x, this._scratch.y, this._scratch.z];
+  }
+
+  sunWorldPos(): [number, number, number] {
+    this.root.updateWorldMatrix(true, true);
+    this.travelGroup.getWorldPosition(this._scratch);
+    return [this._scratch.x, this._scratch.y, this._scratch.z];
   }
 
   dispose(): void {

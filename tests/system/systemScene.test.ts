@@ -23,10 +23,12 @@ describe('SystemScene', () => {
   it('builds star + light + one sphere and one ring per planet', () => {
     const scene = new SystemScene(system);
     expect(scene.planetMeshes.length).toBe(2);
-    const meshes = scene.root.children.filter((o) => o instanceof THREE.Mesh);
+    // 恒星・惑星・軌道リング・PointLight は travelGroup（root.children[0]）配下
+    const travelGroup = scene.root.children[0]!;
+    const meshes = travelGroup.children.filter((o) => o instanceof THREE.Mesh);
     // 恒星(1) + 惑星(2) + リング(2) = 5 メッシュ
     expect(meshes.length).toBe(5);
-    expect(scene.root.children.some((o) => o instanceof THREE.PointLight)).toBe(true);
+    expect(travelGroup.children.some((o) => o instanceof THREE.PointLight)).toBe(true);
   });
   it('tags planet meshes with their index', () => {
     const scene = new SystemScene(system);
@@ -69,14 +71,15 @@ describe('SystemScene.update', () => {
     const before = scene.planetMeshes[0]!.position.clone();
     scene.update(5);
     expect(scene.planetMeshes[0]!.position.distanceTo(before)).toBeGreaterThan(0);
-    // 中心星は update で動かない（原点固定）
-    expect(scene.root.children[0]!.position.length()).toBe(0);
+    // 中心星のローカル位置は update で動かない（travelGroup 経由でのみ移動する）
+    const travelGroup = scene.root.children[0]!;
+    expect(travelGroup.children[0]!.position.length()).toBe(0);
     scene.dispose();
   });
 });
 
 describe('SystemScene galactic-path markers', () => {
-  it('solar system has flowing galactic-path markers that move with update(t)', () => {
+  it('solar system has fixed galactic-path markers (milestones) that do not move with update(t)', () => {
     const sys: StellarSystem = {
       starIndex: 0, starName: '太陽', spectralClass: 'G', temperatureK: 5800, luminositySun: 1,
       planets: [],
@@ -85,7 +88,7 @@ describe('SystemScene galactic-path markers', () => {
     expect(scene.galMarkers.length).toBe(GAL_MARKER_COUNT);
     const before = scene.galMarkers[0]!.position.clone();
     scene.update(3);
-    expect(scene.galMarkers[0]!.position.distanceTo(before)).toBeGreaterThan(0);
+    expect(scene.galMarkers[0]!.position.distanceTo(before)).toBe(0);
     scene.dispose();
   });
   it('non-solar system has no galactic-path markers', () => {
@@ -95,6 +98,40 @@ describe('SystemScene galactic-path markers', () => {
     };
     const scene = new SystemScene(sys);
     expect(scene.galMarkers.length).toBe(0);
+    scene.dispose();
+  });
+});
+
+describe('SystemScene travel (whole system travels the galactic path)', () => {
+  it('solar: update(t) travels the whole system (sun + planet world pos move), markers stay fixed', () => {
+    const sys: StellarSystem = {
+      starIndex: 0, starName: '太陽', spectralClass: 'G', temperatureK: 5800, luminositySun: 1,
+      planets: [{
+        name: 'p', type: 'rock', semiMajorAxisAu: 1, radiusEarth: 1, massEarth: 1,
+        eqTempK: null, inHabitableZone: false, isReal: true, estimated: false,
+      }],
+    };
+    const scene = new SystemScene(sys);
+    const sun0 = scene.sunWorldPos();
+    const p0 = scene.planetWorldPos(0);
+    const marker0 = scene.galMarkers[0]!.position.clone();
+    scene.update(3);
+    const sun3 = scene.sunWorldPos();
+    const p3 = scene.planetWorldPos(0);
+    expect(Math.hypot(sun3[0]-sun0[0], sun3[1]-sun0[1], sun3[2]-sun0[2])).toBeGreaterThan(0);
+    expect(Math.hypot(p3[0]-p0[0], p3[1]-p0[1], p3[2]-p0[2])).toBeGreaterThan(0);
+    expect(scene.galMarkers[0]!.position.distanceTo(marker0)).toBe(0);
+    scene.dispose();
+  });
+  it('non-solar: sun stays at origin (no travel)', () => {
+    const sys: StellarSystem = {
+      starIndex: 5, starName: 'x', spectralClass: 'K', temperatureK: 4000, luminositySun: 0.3,
+      planets: [],
+    };
+    const scene = new SystemScene(sys);
+    scene.update(3);
+    const sun = scene.sunWorldPos();
+    expect(Math.hypot(sun[0], sun[1], sun[2])).toBe(0);
     scene.dispose();
   });
 });

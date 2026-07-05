@@ -14,7 +14,8 @@ describe('SystemScene planet ring', () => {
   it('adds one extra mesh for a ringed planet', () => {
     const withRing = new SystemScene(sys(true));
     const without = new SystemScene(sys(false));
-    const meshCount = (s: SystemScene) => s.root.children.filter((o) => o instanceof THREE.Mesh).length;
+    // 太陽・惑星・リングは travelGroup（root.children[0]）配下
+    const meshCount = (s: SystemScene) => s.root.children[0]!.children.filter((o) => o instanceof THREE.Mesh).length;
     expect(meshCount(withRing)).toBe(meshCount(without) + 1);
   });
 });
