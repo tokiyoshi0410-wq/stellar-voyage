@@ -29,4 +29,10 @@ describe('scaleBarFor', () => {
     const b = scaleBarFor(1e10, 1000, FOV);
     expect(b.label).toMatch(/万光年/);
   });
+  it('formats 億km in plain (non-exponential) notation for large AU values', () => {
+    const b = scaleBarFor(649, 1000, FOV); // niceAu ≈ 100 → 億km would be "1.5e+2" without the fix
+    expect(b.label).toMatch(/100 AU/);
+    expect(b.label).toMatch(/150億km/);
+    expect(b.label).not.toMatch(/e\+/);
+  });
 });

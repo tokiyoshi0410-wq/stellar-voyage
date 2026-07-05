@@ -34,7 +34,8 @@ export function scaleBarFor(
   const rawAu = TARGET_PX / pxPerAu;
   if (rawAu < 6000) {
     const niceAu = niceRound(rawAu);
-    const okm = (niceAu * AU_IN_OKUKM).toPrecision(2);
+    // toPrecision(2) は3桁以上で指数表記になる（"1.5e+2"）。固定表記に戻す（小学生向け）。
+    const okm = Number((niceAu * AU_IN_OKUKM).toPrecision(2)).toLocaleString('ja-JP');
     return {
       label: `${fmtNum(niceAu)} AU ≈ ${okm}億km（光で ${lightTimeShort(niceAu)}）`,
       widthPx: niceAu * pxPerAu,
