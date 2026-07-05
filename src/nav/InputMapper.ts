@@ -19,8 +19,10 @@ export class InputMapper {
     target.addEventListener('pointercancel', this.onUp as EventListener);
     target.addEventListener('pointermove', this.onMove as EventListener);
     target.addEventListener('wheel', this.onWheel as EventListener);
-    target.addEventListener('keydown', this.onKeyDown as EventListener);
-    target.addEventListener('keyup', this.onKeyUp as EventListener);
+    // Keyboard is inherently global: the canvas is not focusable/focused, so
+    // keydown/keyup must bind to window rather than target (see task-6 fix report).
+    window.addEventListener('keydown', this.onKeyDown as EventListener);
+    window.addEventListener('keyup', this.onKeyUp as EventListener);
   }
 
   consumeDrag(): { dx: number; dy: number } {
@@ -39,7 +41,7 @@ export class InputMapper {
     this.target.removeEventListener('pointercancel', this.onUp as EventListener);
     this.target.removeEventListener('pointermove', this.onMove as EventListener);
     this.target.removeEventListener('wheel', this.onWheel as EventListener);
-    this.target.removeEventListener('keydown', this.onKeyDown as EventListener);
-    this.target.removeEventListener('keyup', this.onKeyUp as EventListener);
+    window.removeEventListener('keydown', this.onKeyDown as EventListener);
+    window.removeEventListener('keyup', this.onKeyUp as EventListener);
   }
 }

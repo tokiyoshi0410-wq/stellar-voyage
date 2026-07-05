@@ -26,13 +26,22 @@ describe('InputMapper', () => {
     expect(m.consumeWheel()).toBe(120);
     expect(m.consumeWheel()).toBe(0);
   });
-  it('maps WASD to forward/right', () => {
+  it('maps WASD to forward/right via window keyboard events (canvas is not focusable)', () => {
     const t = makeTarget(); const m = new InputMapper(t.el);
-    t.fire('keydown', { code: 'KeyW' }); t.fire('keydown', { code: 'KeyD' });
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyW' }));
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyD' }));
     expect(m.movement()).toEqual({ forward: 1, right: 1 });
-    t.fire('keydown', { code: 'KeyS' }); // W and S → forward 0
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyS' })); // W and S → forward 0
     expect(m.movement()).toEqual({ forward: 0, right: 1 });
-    t.fire('keyup', { code: 'KeyD' });
+    window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyD' }));
     expect(m.movement()).toEqual({ forward: 0, right: 0 });
+    // release remaining keys so no state leaks into other tests via the shared window
+    window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyW' }));
+    window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyS' }));
+    m.dispose();
+    // after dispose(), window keydown must no longer affect movement()
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyW' }));
+    expect(m.movement()).toEqual({ forward: 0, right: 0 });
+    window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyW' })); // cleanup in case dispose didn't work
   });
 });
