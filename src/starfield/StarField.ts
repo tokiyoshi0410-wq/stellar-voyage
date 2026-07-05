@@ -41,6 +41,7 @@ export class StarField {
         uFocusPc: { value: new THREE.Vector3() },
         uScaleAuPerPc: { value: AU_PER_PC },
         uPixelScale: { value: 300.0 },
+        uOpacity: { value: 1.0 },
       },
       vertexShader: vert,
       fragmentShader: frag,
@@ -61,5 +62,9 @@ export class StarField {
     if (focusIndex >= 0) { this.savedSize = arr[focusIndex]!; arr[focusIndex] = 0; }
     this.focusIndex = focusIndex;
     attr.needsUpdate = true;
+  }
+
+  setOpacity(o: number): void {
+    this.material.uniforms.uOpacity!.value = o;
   }
 }
