@@ -39,3 +39,12 @@ export function describeStar(columns: StarColumns, index: number, name: string |
     isReal: true,
   };
 }
+
+// 1 AU = 1.496×10^8 km = 1.496 億km
+export const AU_IN_OKUKM = 1.496;
+
+export function formatAuDistance(au: number): string {
+  const auStr = au >= 10 ? au.toFixed(0) : au.toFixed(au < 1 ? 2 : 1);
+  const okm = (au * AU_IN_OKUKM).toPrecision(2);
+  return `${auStr} AU ≈ ${okm}億km`;
+}
