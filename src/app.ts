@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { Renderer, isWebGL2Available } from './engine/Renderer';
-import { FloatingOrigin } from './engine/FloatingOrigin';
 import { StarCatalog } from './catalog/StarCatalog';
 import { StarField, AU_PER_PC } from './starfield/StarField';
 import { buildStellarSystem } from './system/StellarSystem';
@@ -14,11 +13,17 @@ import { systemFade } from './nav/fade';
 import { speedFromSlider } from './nav/speed';
 import { SpeedSlider } from './ui/SpeedSlider';
 import { ControlHints } from './ui/ControlHints';
+import { pickStar } from './selection/Picker';
+import { pickPlanet } from './system/planetPick';
+import { InfoPanel } from './ui/InfoPanel';
+import { PlanetPanel } from './ui/PlanetPanel';
+import { describeStar } from './ui/format';
+import { nearestStarPc } from './nav/nearestStar';
 
 const DRAG_SENS = 0.005;
 const ZOOM_SENS = 0.0015;
-// 画面ピクセル→星クリック判定の許容半径（Task 10 のクリック選択で使用予定）。
-const PIXEL_TO_STAR = 300;
+const PICK_ANGLE = 0.01;
+const PLANET_PICK_ANGLE = 0.05;
 
 export function showFatal(root: HTMLElement, message: string): void {
   const div = document.createElement('div');
@@ -37,12 +42,12 @@ export async function startApp(root: HTMLElement): Promise<void> {
   }
 
   const engine = new Renderer(root);
-  // カメラの AU 世界位置（Task 10 のフォーカス切替で使用予定。現時点では未参照）。
-  const origin = new FloatingOrigin();
   const nav = new NavigationController();
   const input = new InputMapper(engine.renderer.domElement);
   const slider = new SpeedSlider(root);
   new ControlHints(root);
+  const infoPanel = new InfoPanel(root);
+  const planetPanel = new PlanetPanel(root);
 
   engine.renderer.domElement.style.touchAction = 'none';
 
@@ -80,6 +85,43 @@ export async function startApp(root: HTMLElement): Promise<void> {
 
   const camAu = new THREE.Vector3();
 
+  // --- クリック選択（ドラッグと区別） ----------------------------------------
+  let downPos = { x: 0, y: 0 };
+  engine.renderer.domElement.addEventListener('pointerdown', (e: PointerEvent) => {
+    downPos = { x: e.clientX, y: e.clientY };
+  });
+  engine.renderer.domElement.addEventListener('pointerup', (e: PointerEvent) => {
+    if (Math.hypot(e.clientX - downPos.x, e.clientY - downPos.y) >= 5) return;
+
+    const rayDir: [number, number, number] = [-camAu.x, -camAu.y, -camAu.z];
+    const fade = systemFade(nav.viewDistanceAu);
+
+    if (fade > 0.5) {
+      const pIdx = pickPlanet([camAu.x, camAu.y, camAu.z], rayDir, currentSystem, PLANET_PICK_ANGLE);
+      if (pIdx != null) {
+        planetPanel.show(currentSystem.planets[pIdx]!);
+        infoPanel.hide();
+        return;
+      }
+    }
+
+    const fp: [number, number, number] = [
+      nav.focusWorldAu[0] / AU_PER_PC,
+      nav.focusWorldAu[1] / AU_PER_PC,
+      nav.focusWorldAu[2] / AU_PER_PC,
+    ];
+    const camPc: [number, number, number] = [
+      fp[0] + camAu.x / AU_PER_PC,
+      fp[1] + camAu.y / AU_PER_PC,
+      fp[2] + camAu.z / AU_PER_PC,
+    ];
+    const sIdx = pickStar(camPc, rayDir, catalog.columns, PICK_ANGLE);
+    if (sIdx != null) {
+      infoPanel.show(describeStar(catalog.columns, sIdx, catalog.nameOf(sIdx)));
+      planetPanel.hide();
+    }
+  });
+
   let last = performance.now();
   function frame(now: number): void {
     const dt = Math.min((now - last) / 1000, 0.1);
@@ -108,6 +150,11 @@ export async function startApp(root: HTMLElement): Promise<void> {
       nav.focusWorldAu[2] / AU_PER_PC,
     ];
     field.object.position.set(0, 0, 0);
+    const near = nearestStarPc(fp, catalog.columns);
+    if (near.index !== nav.focusStarIndex) {
+      nav.focusStarIndex = near.index;
+      currentSystem = rebuildSystem(near.index);
+    }
     field.setFocus(fp, nav.focusStarIndex);
     field.updateCamera([camAu.x, camAu.y, camAu.z]);
 
