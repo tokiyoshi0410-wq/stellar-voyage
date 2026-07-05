@@ -40,9 +40,12 @@ export class SystemScene {
       this.planetMeshes.push(mesh);
       this.root.add(mesh);
 
+      const ringWidth = Math.max(0.01, p.semiMajorAxisAu * 0.01);
       const ring = new THREE.Mesh(
-        new THREE.RingGeometry(p.semiMajorAxisAu - 0.004, p.semiMajorAxisAu + 0.004, 128),
-        new THREE.MeshBasicMaterial({ color: 0x2b4a7a, side: THREE.DoubleSide, transparent: true, opacity: 0.5 }),
+        new THREE.RingGeometry(p.semiMajorAxisAu - ringWidth, p.semiMajorAxisAu + ringWidth, 128),
+        new THREE.MeshBasicMaterial({
+          color: planetTypeColor(p.type), side: THREE.DoubleSide, transparent: true, opacity: 0.85,
+        }),
       );
       ring.rotation.x = -Math.PI / 2;
       this.root.add(ring);
