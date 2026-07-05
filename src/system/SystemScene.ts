@@ -96,12 +96,6 @@ export class SystemScene {
         markerGroup.add(m);
       }
       this.root.add(markerGroup);
-
-      // 小さな進行方向の矢印（太陽から前方=+X, 弧の接線）。以前の大矢印とは別物・小さい。
-      const arrow = new THREE.ArrowHelper(
-        new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 0, 0), 5, 0xffd479, 2, 1.2,
-      );
-      this.root.add(arrow);
     }
 
     this.root.add(new THREE.PointLight(0xffffff, 2, 0, 0));
