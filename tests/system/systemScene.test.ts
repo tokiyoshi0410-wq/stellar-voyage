@@ -54,3 +54,20 @@ describe('SystemScene solar arrow', () => {
     scene.dispose();
   });
 });
+
+describe('SystemScene.update', () => {
+  it('update(t) advances planet mesh positions', () => {
+    const sys: StellarSystem = {
+      starIndex: 0, starName: 'x', spectralClass: 'G', temperatureK: 5800, luminositySun: 1,
+      planets: [{
+        name: 'p', type: 'rock', semiMajorAxisAu: 1, radiusEarth: 1, massEarth: 1,
+        eqTempK: null, inHabitableZone: false, isReal: true, estimated: false,
+      }],
+    };
+    const scene = new SystemScene(sys);
+    const before = scene.planetMeshes[0]!.position.clone();
+    scene.update(5);
+    expect(scene.planetMeshes[0]!.position.distanceTo(before)).toBeGreaterThan(0);
+    scene.dispose();
+  });
+});

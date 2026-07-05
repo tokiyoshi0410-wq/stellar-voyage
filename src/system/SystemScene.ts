@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { StellarSystem, PlanetType } from './types';
-import { orbitPosition, planetPhase } from './orbit';
+import { orbitPosition, planetPhase, animatedPhase } from './orbit';
 import { makePlanetMaterial } from '../planets/PlanetMaterial';
 
 export function planetTypeColor(type: PlanetType): number {
@@ -20,6 +20,7 @@ function planetDisplayRadius(radiusEarth: number): number {
 export class SystemScene {
   readonly root = new THREE.Group();
   readonly planetMeshes: THREE.Mesh[] = [];
+  private readonly ringMeshes = new Map<number, THREE.Mesh>();
 
   constructor(readonly system: StellarSystem) {
     const star = new THREE.Mesh(
@@ -58,6 +59,7 @@ export class SystemScene {
         );
         planetRing.rotation.x = -Math.PI / 2;
         planetRing.position.set(x, y, z);
+        this.ringMeshes.set(i, planetRing);
         this.root.add(planetRing);
       }
     });
@@ -79,6 +81,17 @@ export class SystemScene {
     }
 
     this.root.add(new THREE.PointLight(0xffffff, 2, 0, 0));
+  }
+
+  update(t: number): void {
+    this.system.planets.forEach((p, i) => {
+      const [x, y, z] = orbitPosition(
+        p.semiMajorAxisAu,
+        animatedPhase(this.system.starIndex, i, p.semiMajorAxisAu, t),
+      );
+      this.planetMeshes[i]!.position.set(x, y, z);
+      this.ringMeshes.get(i)?.position.set(x, y, z);
+    });
   }
 
   dispose(): void {
