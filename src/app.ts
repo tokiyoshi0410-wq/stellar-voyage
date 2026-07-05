@@ -25,6 +25,9 @@ import { nearestStarsPc } from './nav/nearestStars';
 import { PARSEC_IN_LY } from './astro/spectral';
 import { ScalePanel } from './ui/ScalePanel';
 import { scaleInfoFor } from './edu/scaleInfo';
+import { scaleBarFor } from './edu/scaleBar';
+import { ScaleBar } from './ui/ScaleBar';
+import { LocalGroupDiagram } from './ui/LocalGroupDiagram';
 
 const DRAG_SENS = 0.005;
 const ZOOM_SENS = 0.0015;
@@ -57,6 +60,8 @@ export async function startApp(root: HTMLElement): Promise<void> {
   const planetPanel = new PlanetPanel(root);
   const labels = new LabelLayer(root);
   const scalePanel = new ScalePanel(root);
+  const scaleBar = new ScaleBar(root);
+  const localGroup = new LocalGroupDiagram(root);
 
   engine.renderer.domElement.style.touchAction = 'none';
 
@@ -200,6 +205,12 @@ export async function startApp(root: HTMLElement): Promise<void> {
     // --- ラベル（星名 / 惑星名+距離） ------------------------------------
     const scaleInfo = scaleInfoFor(nav.viewDistanceAu);
     scalePanel.update(scaleInfo);
+    scaleBar.update(scaleBarFor(
+      nav.viewDistanceAu,
+      engine.renderer.domElement.clientHeight,
+      engine.camera.fov * Math.PI / 180,
+    ));
+    localGroup.setVisible(scaleInfo.stage === 'localgroup');
     const labelItems: LabelItem[] = [];
     if (fade > 0.5) {
       labelItems.push({ text: starDisplayName(currentSystem.starIndex, currentSystem.starName), worldPos: [0, 0, 0] });
@@ -207,7 +218,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
         const [px, py, pz] = orbitPosition(p.semiMajorAxisAu, planetPhase(currentSystem.starIndex, i));
         labelItems.push({ text: `${p.name}  ${formatAuDistance(p.semiMajorAxisAu)}`, worldPos: [px, py, pz] });
       });
-    } else if (scaleInfo.stage !== 'galaxy') {
+    } else if (scaleInfo.stage !== 'galaxy' && scaleInfo.stage !== 'localgroup') {
       const cols = catalog.columns;
       for (const s of nearestStarsPc(fp, cols, 15)) {
         const px = cols.x[s.index]!, py = cols.y[s.index]!, pz = cols.z[s.index]!;
