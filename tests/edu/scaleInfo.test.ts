@@ -10,6 +10,10 @@ describe('formatLightTime', () => {
     expect(formatLightTime(500)).toBe('約8時間');
     expect(formatLightTime(60 * 24 * 400)).toMatch(/約.*年/);
   });
+  it('carries rounding up to the next unit (no "60秒" / "分60秒")', () => {
+    expect(formatLightTime(0.999)).toBe('1分');
+    expect(formatLightTime(8.995)).toBe('9分');
+  });
 });
 
 describe('scaleInfoFor', () => {
