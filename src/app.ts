@@ -35,7 +35,14 @@ const DRAG_SENS = 0.005;
 const ZOOM_SENS = 0.0015;
 const PICK_ANGLE = 0.02;
 const PLANET_PICK_ANGLE = 0.05;
+const SUN_PICK_ANGLE = 0.06; // 太陽(原点)クリック判定の角度（live-tune）
 const FOCUS_HYSTERESIS = 0.9; // 新しい最近傍星へ切り替える距離マージン（境界での往復防止）
+
+function sunGalacticText(): string {
+  return `太陽\n銀河公転: ${SUN_FACTS.galacticSpeedKmS} km/s（銀河を約${(SUN_FACTS.galacticPeriodYr / 1e8).toPrecision(2)}億年で1周）\n` +
+    `銀河中心まで: 約${SUN_FACTS.galacticCenterLy / 1e4}万光年\n` +
+    `自転: 赤道 約${SUN_FACTS.rotationSpeedKmH} km/h`;
+}
 
 export function showFatal(root: HTMLElement, message: string): void {
   const div = document.createElement('div');
@@ -131,6 +138,16 @@ export async function startApp(root: HTMLElement): Promise<void> {
         infoPanel.hide();
         return;
       }
+
+      if (currentSystem.starIndex === 0) {
+        const camLen = Math.hypot(camAu.x, camAu.y, camAu.z) || 1;
+        const sunDot = (-camAu.x * rayDir[0] - camAu.y * rayDir[1] - camAu.z * rayDir[2]) / camLen;
+        if (sunDot > Math.cos(SUN_PICK_ANGLE)) {
+          planetPanel.showText(sunGalacticText());
+          infoPanel.hide();
+          return;
+        }
+      }
     }
 
     const fp: [number, number, number] = [
@@ -146,11 +163,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
     const sIdx = pickStar(camPc, rayDir, catalog.columns, PICK_ANGLE);
     if (sIdx != null) {
       if (currentSystem.starIndex === 0 && sIdx === 0) {
-        planetPanel.showText(
-          `太陽\n銀河公転: ${SUN_FACTS.galacticSpeedKmS} km/s（銀河を約${(SUN_FACTS.galacticPeriodYr / 1e8).toPrecision(2)}億年で1周）\n` +
-          `銀河中心まで: 約${SUN_FACTS.galacticCenterLy / 1e4}万光年\n` +
-          `自転: 赤道 約${SUN_FACTS.rotationSpeedKmH} km/h`,
-        );
+        planetPanel.showText(sunGalacticText());
         infoPanel.hide();
       } else {
         infoPanel.show(describeStar(catalog.columns, sIdx, starDisplayName(sIdx, catalog.nameOf(sIdx))));
@@ -238,7 +251,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
       const isSolar = currentSystem.starIndex === 0;
       if (isSolar) {
         labelItems.push({
-          text: `太陽 ・ 公転 ${SUN_FACTS.galacticSpeedKmS}km/s（銀河を約${(SUN_FACTS.galacticPeriodYr / 1e8).toPrecision(2)}億年で1周）・ 自転 赤道約${SUN_FACTS.rotationSpeedKmH}km/h`,
+          text: `太陽 ・ 公転 ${SUN_FACTS.galacticSpeedKmS}km/s（クリックで詳細）`,
           worldPos: [0, 0, 0],
         });
       } else {
