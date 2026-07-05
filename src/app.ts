@@ -12,6 +12,7 @@ import { orbitCameraPosition } from './nav/orbitCamera';
 import { systemFade } from './nav/fade';
 import { speedFromSlider } from './nav/speed';
 import { SpeedSlider } from './ui/SpeedSlider';
+import { PauseButton } from './ui/PauseButton';
 import { ControlHints } from './ui/ControlHints';
 import { pickStar } from './selection/Picker';
 import { pickPlanet } from './system/planetPick';
@@ -64,6 +65,9 @@ export async function startApp(root: HTMLElement): Promise<void> {
   const nav = new NavigationController();
   const input = new InputMapper(engine.renderer.domElement);
   const slider = new SpeedSlider(root);
+  let paused = false;
+  function togglePause(): void { paused = !paused; pauseButton.setPaused(paused); }
+  const pauseButton = new PauseButton(root, togglePause);
   new ControlHints(root);
   const infoPanel = new InfoPanel(root);
   const planetPanel = new PlanetPanel(root);
@@ -180,7 +184,8 @@ export async function startApp(root: HTMLElement): Promise<void> {
   function frame(now: number): void {
     const dt = Math.min((now - last) / 1000, 0.1);
     last = now;
-    animT += dt;
+    if (!paused) animT += dt;
+    if (input.consumePauseToggle()) togglePause();
 
     // --- 入力 → 航法状態 -------------------------------------------------
     const drag = input.consumeDrag();
@@ -254,7 +259,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
       const isSolar = currentSystem.starIndex === 0;
       if (isSolar) {
         labelItems.push({
-          text: `太陽 ・ 公転 ${SUN_FACTS.galacticSpeedKmS}km/s（クリックで詳細）`,
+          text: `太陽 ・ 銀河を ${SUN_FACTS.galacticSpeedKmS}km/s で移動中（クリックで詳細）`,
           worldPos: [0, 0, 0],
         });
       } else {
