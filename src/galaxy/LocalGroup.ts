@@ -49,10 +49,12 @@ export class LocalGroup {
   }
 
   midpointWorldPos(): [number, number, number] {
-    this.object.updateWorldMatrix(true, false);
-    const v = new THREE.Vector3(ANDROMEDA_OFFSET_AU / 2, 0, 0);
-    this.object.localToWorld(v);
-    return [v.x, v.y, v.z];
+    this.object.updateWorldMatrix(true, true);
+    const a = new THREE.Vector3();
+    const b = new THREE.Vector3();
+    this.milkyWay.object.getWorldPosition(a);
+    this.andromeda.object.getWorldPosition(b);
+    return [(a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2];
   }
 
   dispose(): void {
