@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  galacticPathPoint, galacticMarkerParam, GAL_ARC_SPAN, systemTravelParam,
+  galacticPathPoint, galacticMarkerParam, GAL_ARC_SPAN,
 } from '../../src/system/galacticPath';
 
 describe('galacticPathPoint', () => {
@@ -37,27 +37,5 @@ describe('galacticMarkerParam', () => {
   it('loops with period GAL_ARC_SPAN / flowSpeed', () => {
     const period = GAL_ARC_SPAN / 0.15;
     expect(galacticMarkerParam(2, 6, 1 + period, 0.15)).toBeCloseTo(galacticMarkerParam(2, 6, 1, 0.15), 9);
-  });
-});
-
-describe('systemTravelParam (normalized oscillation phase)', () => {
-  it('is centered (0) at t=0', () => {
-    expect(systemTravelParam(0, 0.35)).toBeCloseTo(0, 9);
-  });
-  it('stays within [-1, 1]', () => {
-    for (const t of [0, 1, 5, 13, 40, 100]) {
-      const p = systemTravelParam(t, 0.35);
-      expect(p).toBeGreaterThanOrEqual(-1);
-      expect(p).toBeLessThanOrEqual(1);
-    }
-  });
-  it('moves away from center for small t>0', () => {
-    expect(Math.abs(systemTravelParam(1, 0.35))).toBeGreaterThan(0);
-  });
-  it('returns to center at half period (t = π/speed)', () => {
-    expect(systemTravelParam(Math.PI / 0.35, 0.35)).toBeCloseTo(0, 9);
-  });
-  it('is periodic with period 2π/speed', () => {
-    expect(systemTravelParam(2 + 2 * Math.PI / 0.35, 0.35)).toBeCloseTo(systemTravelParam(2, 0.35), 9);
   });
 });

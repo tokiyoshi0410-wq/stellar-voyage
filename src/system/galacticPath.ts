@@ -19,13 +19,4 @@ export function galacticMarkerParam(k: number, count: number, t: number, flowSpe
   return Math.PI / 3 - wrapped;                                          // [+π/3 .. -π/3)（減少）
 }
 
-export const SYSTEM_TRAVEL_SPEED = 0.35;          // 往復の角速度係数 rad/秒（実機調整）
-export const SYSTEM_TRAVEL_VIEW_FRACTION = 0.18;  // 旅の振幅 = viewDistanceAu の何割か（実機調整）
-
-/**
- * 太陽系トラベルの正規化位相 [-1, 1]（sine で滑らかに往復）。t=0 で 0（中心）。
- * 実際の移動量(AU) = SYSTEM_TRAVEL_VIEW_FRACTION * viewDistanceAu * この値（呼び出し側で乗算）。
- */
-export function systemTravelParam(t: number, speed: number): number {
-  return Math.sin(t * speed);
-}
+export const SYSTEM_TRAVEL_SPEED = 0.2;           // 公転角速度 rad/秒（実機調整）

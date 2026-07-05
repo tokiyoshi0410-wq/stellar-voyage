@@ -30,9 +30,7 @@ import { ScaleBar } from './ui/ScaleBar';
 import { LocalGroup } from './galaxy/LocalGroup';
 import { localGroupFade } from './nav/localGroupFade';
 import { PLANET_FACTS, SUN_FACTS, earthClosestApproachAu, formatOrbitalKmH } from './system/solarFacts';
-import {
-  systemTravelParam, SYSTEM_TRAVEL_SPEED, SYSTEM_TRAVEL_VIEW_FRACTION, GAL_PATH_R,
-} from './system/galacticPath';
+import { SYSTEM_TRAVEL_SPEED } from './system/galacticPath';
 
 const DRAG_SENS = 0.005;
 const ZOOM_SENS = 0.0015;
@@ -236,8 +234,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
     if (systemScene) {
       systemScene.update(animT);
       const inSolarView = currentSystem.starIndex === 0 && fade > 0.5;
-      const travelAngleAmp = inSolarView ? (SYSTEM_TRAVEL_VIEW_FRACTION * nav.viewDistanceAu) / GAL_PATH_R : 0;
-      systemScene.setTravelAngle(travelAngleAmp * systemTravelParam(animT, SYSTEM_TRAVEL_SPEED));
+      systemScene.setTravelAngle(inSolarView ? animT * SYSTEM_TRAVEL_SPEED : 0);
       systemScene.root.traverse((o) => {
         const mat = (o as THREE.Mesh).material;
         if (!mat) return;
