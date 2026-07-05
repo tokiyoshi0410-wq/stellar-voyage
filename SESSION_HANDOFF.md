@@ -17,7 +17,24 @@
   型別 GLSL 惑星シェーダー（昼夜境界+大気リム）、NASA 実在系外惑星 310 系統結合（実在バッジ）、
   ハビタブルゾーン判定。惑星クリックで日本語 PlanetPanel。
 
-## 直近完了 — 「連続ズーム航法 UX」ミルストーン ✅ 完了（2026-07-05）
+## 直近完了 — 「星ラベル・距離表示・軌道視認性」ミルストーン ✅ 完了（2026-07-05）
+
+連続ズーム航法に、星名ラベル・惑星距離ラベル・軌道視認性を追加。
+- **銀河ビュー**: カメラに近い星に名前ラベル（固有名 or `HYG #番号`）＋太陽からの距離（光年）
+- **星系ビュー**: 各惑星に「名前＋軌道半径（AU＋億km）」ラベル（地球=1.0 AU ≈ 1.5億km）＋中央星名
+- **軌道リング**: 明るく・惑星ごとの色で視認性向上
+- **太陽表示**: HYG index 0 を全箇所で「太陽」表示（`ui/format.ts` の `starDisplayName` ヘルパー、旧 "Sol" 廃止）
+- ラベルは DOM オーバーレイ（`ui/LabelLayer.ts`）＋`camera.project()`（float64）、`pointer-events:none` でクリック非干渉
+
+- spec: `docs/superpowers/specs/2026-07-05-stellar-voyage-labels-and-distances-design.md`
+- plan: `docs/superpowers/plans/2026-07-05-stellar-voyage-labels-and-distances.md`（全 5 タスク）
+- ledger: `.superpowers/sdd/progress.md`（「Labels & Distances」節）
+
+**現 HEAD: `9d81d44`。範囲 `6e6ccba..9d81d44` = Labels 5 タスク + 太陽 fix + ラベル1フレーム遅延 fix。すべて `main`・未 push。**
+opus 最終レビュー通過。124/124 テスト・tsc・build 緑。Playwright E2E 検証済み。最終レビューが捕捉した「motion 中ラベルが1フレーム遅れる」問題（`labels.render` を `engine.render` 前に呼んでいた→後へ移動）を修正済み。
+未対応（deferred, cosmetic）: 近接連星のラベル重なり、惑星ラベルと右上パネルの重なり。
+
+## その前に完了 — 「連続ズーム航法 UX」ミルストーン ✅ 完了（2026-07-05）
 
 現行の「galaxy/system 2 モード + ボタン切替」を、単一の連続ズーム航法へ作り替え完了。
 - **太陽系を斜め上から見下ろす視点で開始**（本物の 8 惑星・実質量）
