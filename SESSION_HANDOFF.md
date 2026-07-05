@@ -17,7 +17,22 @@
   型別 GLSL 惑星シェーダー（昼夜境界+大気リム）、NASA 実在系外惑星 310 系統結合（実在バッジ）、
   ハビタブルゾーン判定。惑星クリックで日本語 PlanetPanel。
 
-## 直近完了 — 「星ラベル・距離表示・軌道視認性」ミルストーン ✅ 完了（2026-07-05）
+## 直近完了 — 「教育スケールパネル（光速で測る規模）」ミルストーン ✅ 完了（2026-07-05）
+
+ズームアウトで太陽系→太陽系の外→天の川銀河へスケールが変わるのに合わせ、左上パネルに小学生向けの教育情報を表示。
+- **太陽系**: 端から端 約90億km（海王星の軌道）／光でも約8時間／地球から太陽まで光で8分19秒
+- **太陽系の外へ**: 太陽系はこんなに小さい！／いちばん近い星まで光で約4.2年／光は1秒で地球7周半
+- **天の川銀河**: 星の数 約2000億個／端から端 約10万光年／太陽もこの中のひとつ（**この段階では星名ラベルを省略**、星の点は残る）
+- 光速換算は `src/edu/scaleInfo.ts`（`1 AU = 8.317 光分`、`scaleInfoFor(viewDistanceAu)` が3ステージ判定）、パネルは `src/ui/ScalePanel.ts`（左上・`pointer-events:none`）
+- ステージ境界: solar<30000 AU / interstellar 30000–1e6 / galaxy>=1e6（`viewDistanceAu`）
+
+- spec: `docs/superpowers/specs/2026-07-05-stellar-voyage-educational-scale-design.md`
+- plan: `docs/superpowers/plans/2026-07-05-stellar-voyage-educational-scale.md`（全 3 タスク）
+
+**現 HEAD: `bea916f`。範囲 `5b64c85..bea916f` = Scale 3 タスク + formatLightTime 桁上がり fix。すべて `main`・未 push。**
+opus 最終レビュー「Ready to merge」（修正不要）。133/133 テスト・tsc・build 緑。Playwright E2E 検証済み（3ステージのパネル文言・銀河でのラベル省略 9→5→0・クリック非干渉）。
+
+## 前の完了 — 「星ラベル・距離表示・軌道視認性」ミルストーン ✅ 完了（2026-07-05）
 
 連続ズーム航法に、星名ラベル・惑星距離ラベル・軌道視認性を追加。
 - **銀河ビュー**: カメラに近い星に名前ラベル（固有名 or `HYG #番号`）＋太陽からの距離（光年）
