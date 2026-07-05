@@ -16,4 +16,14 @@ describe('ScaleBar', () => {
     const wrap = root.querySelector('div') as HTMLDivElement;
     expect(wrap.style.pointerEvents).toBe('none');
   });
+  it('setVisible toggles the scale bar visibility', () => {
+    const root = document.createElement('div');
+    const bar = new ScaleBar(root);
+    const wrap = root.firstElementChild as HTMLElement;
+    expect(wrap.style.display).not.toBe('none'); // visible by default
+    bar.setVisible(false);
+    expect(wrap.style.display).toBe('none');
+    bar.setVisible(true);
+    expect(wrap.style.display).toBe('block');
+  });
 });

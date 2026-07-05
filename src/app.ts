@@ -212,6 +212,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
       engine.renderer.domElement.clientHeight,
       engine.camera.fov * Math.PI / 180,
     ));
+    scaleBar.setVisible(scaleInfo.stage !== 'localgroup');
     const lgFade = localGroupFade(nav.viewDistanceAu);
     localGroup.object.visible = lgFade > 0;
     localGroup.setOpacity(lgFade);

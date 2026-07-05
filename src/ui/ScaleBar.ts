@@ -1,11 +1,12 @@
 export class ScaleBar {
   private readonly line: HTMLDivElement;
   private readonly label: HTMLDivElement;
+  private readonly wrap: HTMLDivElement;
   private lastKey = '';
 
   constructor(root: HTMLElement) {
-    const wrap = document.createElement('div');
-    wrap.style.cssText =
+    this.wrap = document.createElement('div');
+    this.wrap.style.cssText =
       'position:fixed;left:16px;bottom:16px;color:#eaf2ff;font:12px system-ui,sans-serif;' +
       'text-shadow:0 0 3px #000;pointer-events:none;';
     this.line = document.createElement('div');
@@ -14,8 +15,8 @@ export class ScaleBar {
       'border-bottom:2px solid #eaf2ff;box-sizing:border-box;';
     this.label = document.createElement('div');
     this.label.style.marginTop = '3px';
-    wrap.append(this.line, this.label);
-    root.appendChild(wrap);
+    this.wrap.append(this.line, this.label);
+    root.appendChild(this.wrap);
   }
 
   update(bar: { label: string; widthPx: number }): void {
@@ -24,5 +25,9 @@ export class ScaleBar {
     this.lastKey = key;
     this.line.style.width = `${bar.widthPx}px`;
     this.label.textContent = bar.label;
+  }
+
+  setVisible(v: boolean): void {
+    this.wrap.style.display = v ? 'block' : 'none';
   }
 }
