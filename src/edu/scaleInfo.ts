@@ -4,6 +4,7 @@ const LIGHT_MIN_PER_AU = 8.317;   // 1 AU を光が進む時間（分）
 const NEPTUNE_ORBIT_AU = 30.1;    // 海王星の軌道長半径（solarSystem.ts と一致）
 const SOLAR_MAX_AU = 30000;       // 太陽系ステージの上限（フェード帯の上端）
 const GALAXY_MIN_AU = 1_000_000;  // 銀河ステージの下限
+const LOCALGROUP_MIN_AU = 1e10;
 
 export function formatLightTime(lightMinutes: number): string {
   // 総秒数から算出して単位境界の桁上がりを正しく扱う（0.999分→"1分" 等）。
@@ -21,12 +22,23 @@ export function formatLightTime(lightMinutes: number): string {
 }
 
 export interface ScaleInfo {
-  stage: 'solar' | 'interstellar' | 'galaxy';
+  stage: 'solar' | 'interstellar' | 'galaxy' | 'localgroup';
   title: string;
   lines: string[];
 }
 
 export function scaleInfoFor(viewDistanceAu: number): ScaleInfo {
+  if (viewDistanceAu >= LOCALGROUP_MIN_AU) {
+    return {
+      stage: 'localgroup',
+      title: '局部銀河群',
+      lines: [
+        '銀河が 約50個 集まった なかま',
+        '天の川銀河とアンドロメダ銀河は 約250万光年',
+        '光でも 250万年 かかる きょり',
+      ],
+    };
+  }
   if (viewDistanceAu >= GALAXY_MIN_AU) {
     return {
       stage: 'galaxy',

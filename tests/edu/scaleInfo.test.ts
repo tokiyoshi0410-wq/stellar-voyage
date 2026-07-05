@@ -36,3 +36,13 @@ describe('scaleInfoFor', () => {
     expect(scaleInfoFor(2_000_000).lines.join(' ')).toMatch(/10万光年/);
   });
 });
+
+describe('scaleInfoFor local group', () => {
+  it('enters localgroup at 1e10 AU and mentions the Andromeda distance', () => {
+    expect(scaleInfoFor(5e9).stage).toBe('galaxy');
+    const info = scaleInfoFor(1e10);
+    expect(info.stage).toBe('localgroup');
+    expect(info.title).toBe('局部銀河群');
+    expect(info.lines.join(' ')).toMatch(/250万光年/);
+  });
+});
