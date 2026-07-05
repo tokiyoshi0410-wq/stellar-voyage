@@ -17,7 +17,21 @@
   型別 GLSL 惑星シェーダー（昼夜境界+大気リム）、NASA 実在系外惑星 310 系統結合（実在バッジ）、
   ハビタブルゾーン判定。惑星クリックで日本語 PlanetPanel。
 
-## 直近完了 — 「縮尺バー + 局部銀河群（アンドロメダ）」ミルストーン ✅ 完了（2026-07-05）
+## 直近完了 — 「局部銀河群の 3D 銀河（Phase 1）」ミルストーン ✅ 完了（2026-07-05）
+
+一番ズームアウトした局部銀河群段の DOM 模式図を、天の川銀河とアンドロメダ銀河の **3D 渦巻きパーティクル**に置き換え。
+- **銀河描画**: `src/galaxy/` に決定論生成（`buildGalaxyGeometry` + `mulberry32`、対数螺旋の腕+中心バルジ+円盤厚み）、`GalaxyDisk`（additive Points + `uOpacity` シェーダ）、`LocalGroup`（天の川 seed1 + アンドロメダ seed2 概念 offset `ANDROMEDA_OFFSET_AU=2.4e10` + 現在地マーカー）
+- **クロスフェード**: `localGroupFade(viewDistanceAu)`（3e9→1e10 smoothstep）で近傍星野（`StarField` に `uOpacity`/`setOpacity` 追加）をフェードアウト・銀河群をフェードイン。`app.ts` が毎フレーム `-focusWorldAu` で相対配置＋現在地/約250万光年ラベル。旧 DOM `LocalGroupDiagram` は削除（3D 置換）
+- 概念スケール圧縮（実250万光年は物理的に描けないためラベルで数値提示、アンドロメダは約2倍径・約3倍先）
+
+- spec: `docs/superpowers/specs/2026-07-05-stellar-voyage-localgroup-galaxies-design.md`
+- plan: `docs/superpowers/plans/2026-07-05-stellar-voyage-localgroup-galaxies.md`（全6タスク + 「実装ポリシー」節: 純粋ロジック=TDD厳密 / 見た目=実機調整）
+
+**現 HEAD: `5dd212e`。範囲 `176614b..5dd212e` = 6タスク + midpoint fix + marker-fade/scratch fix。すべて `main`・未 push。**
+opus 最終レビュー「Ready to merge — YES」（Critical/Important 0、4 named risk[概念スケール float 精度/クロスフェード境界/寿命/削除完全性]すべて健全と検証）。157/157・tsc・build(487KB) 緑。Playwright E2E で全受入基準（2つの渦巻き銀河・現在地/約250万光年ラベル・双方向クロスフェード・ドラッグ回転・全 overlay 非干渉・console は favicon404 のみ）検証済。実装/レビュー=sonnet、最終=opus。
+**Phase 2（次のミルストーン）**: アンドロメダへ飛んで移動（viewDist 連動の速度スケーリング/ワープ機構が必須）＋アンドロメダ内部の手続き生成星野（天の川 HYG と対称の別世界）。user 承認済み方針。deferred minors（除算ガード/ANDROMEDA テスト/tinyColumns dup）は progress.md 参照。
+
+## 以前の完了 — 「縮尺バー + 局部銀河群（アンドロメダ）」ミルストーン ✅ 完了（2026-07-05）
 
 画面上の距離表示と、天の川銀河のさらに外＝アンドロメダ銀河との位置関係を追加。
 - **縮尺バー（左下・常時）**: カメラ投影から算出し、ズームで単位が **AU（+億km+光での時間）→ 光年 → 万光年** と自動切替（`src/edu/scaleBar.ts` の `scaleBarFor`、`src/ui/ScaleBar.ts`）
