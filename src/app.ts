@@ -22,7 +22,7 @@ import { nearestStarPc } from './nav/nearestStar';
 
 const DRAG_SENS = 0.005;
 const ZOOM_SENS = 0.0015;
-const PICK_ANGLE = 0.01;
+const PICK_ANGLE = 0.02;
 const PLANET_PICK_ANGLE = 0.05;
 
 export function showFatal(root: HTMLElement, message: string): void {
@@ -89,11 +89,17 @@ export async function startApp(root: HTMLElement): Promise<void> {
   let downPos = { x: 0, y: 0 };
   engine.renderer.domElement.addEventListener('pointerdown', (e: PointerEvent) => {
     downPos = { x: e.clientX, y: e.clientY };
+    if (e.pointerId != null) engine.renderer.domElement.setPointerCapture(e.pointerId);
   });
   engine.renderer.domElement.addEventListener('pointerup', (e: PointerEvent) => {
     if (Math.hypot(e.clientX - downPos.x, e.clientY - downPos.y) >= 5) return;
 
-    const rayDir: [number, number, number] = [-camAu.x, -camAu.y, -camAu.z];
+    const rect = engine.renderer.domElement.getBoundingClientRect();
+    const ndcX = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    const ndcY = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+    const rc = new THREE.Raycaster();
+    rc.setFromCamera(new THREE.Vector2(ndcX, ndcY), engine.camera);
+    const rayDir: [number, number, number] = [rc.ray.direction.x, rc.ray.direction.y, rc.ray.direction.z];
     const fade = systemFade(nav.viewDistanceAu);
 
     if (fade > 0.5) {
@@ -118,6 +124,9 @@ export async function startApp(root: HTMLElement): Promise<void> {
     const sIdx = pickStar(camPc, rayDir, catalog.columns, PICK_ANGLE);
     if (sIdx != null) {
       infoPanel.show(describeStar(catalog.columns, sIdx, catalog.nameOf(sIdx)));
+      planetPanel.hide();
+    } else {
+      infoPanel.hide();
       planetPanel.hide();
     }
   });
@@ -152,11 +161,17 @@ export async function startApp(root: HTMLElement): Promise<void> {
     field.object.position.set(0, 0, 0);
     const near = nearestStarPc(fp, catalog.columns);
     if (near.index !== nav.focusStarIndex) {
-      nav.focusStarIndex = near.index;
-      currentSystem = rebuildSystem(near.index);
+      const fi = nav.focusStarIndex;
+      const curDist = Math.hypot(
+        catalog.columns.x[fi]! - fp[0], catalog.columns.y[fi]! - fp[1], catalog.columns.z[fi]! - fp[2],
+      );
+      if (near.distPc < curDist * 0.9) nav.focusStarIndex = near.index; // 10% hysteresis vs. boundary flip-flop
+    }
+    // rebuild the visible system only when on-screen and out of date (skip churn while faded/invisible)
+    if (systemFade(nav.viewDistanceAu) > 0 && currentSystem.starIndex !== nav.focusStarIndex) {
+      currentSystem = rebuildSystem(nav.focusStarIndex);
     }
     field.setFocus(fp, nav.focusStarIndex);
-    field.updateCamera([camAu.x, camAu.y, camAu.z]);
 
     // --- フェード（ズームアウトで恒星系→星野へ） ----------------------------
     const fade = systemFade(nav.viewDistanceAu);

@@ -40,7 +40,6 @@ export class StarField {
       uniforms: {
         uFocusPc: { value: new THREE.Vector3() },
         uScaleAuPerPc: { value: AU_PER_PC },
-        uCameraAu: { value: new THREE.Vector3() },
         uPixelScale: { value: 300.0 },
       },
       vertexShader: vert,
@@ -62,9 +61,5 @@ export class StarField {
     if (focusIndex >= 0) { this.savedSize = arr[focusIndex]!; arr[focusIndex] = 0; }
     this.focusIndex = focusIndex;
     attr.needsUpdate = true;
-  }
-
-  updateCamera(cameraAu: [number, number, number]): void {
-    (this.material.uniforms.uCameraAu!.value as THREE.Vector3).set(cameraAu[0], cameraAu[1], cameraAu[2]);
   }
 }
