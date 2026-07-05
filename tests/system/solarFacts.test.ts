@@ -3,10 +3,14 @@ import {
   PLANET_FACTS, SUN_FACTS, earthClosestApproachAu,
   formatManKm, formatLightTravel, formatShinkansenTravel,
 } from '../../src/system/solarFacts';
+import { getSolarSystem } from '../../src/system/solarSystem';
 
 describe('solarFacts', () => {
   it('has 8 planets index-aligned with getSolarSystem', () => {
     expect(PLANET_FACTS.length).toBe(8);
+  });
+  it('PLANET_FACTS length stays aligned with getSolarSystem (index guard)', () => {
+    expect(PLANET_FACTS.length).toBe(getSolarSystem().length);
   });
   it('flags Venus(1) and Uranus(6) retrograde, Earth(2) not', () => {
     expect(PLANET_FACTS[1]!.retrograde).toBe(true);
