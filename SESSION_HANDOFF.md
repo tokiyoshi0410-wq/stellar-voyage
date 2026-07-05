@@ -17,7 +17,21 @@
   型別 GLSL 惑星シェーダー（昼夜境界+大気リム）、NASA 実在系外惑星 310 系統結合（実在バッジ）、
   ハビタブルゾーン判定。惑星クリックで日本語 PlanetPanel。
 
-## 直近完了 — 「局部銀河群の 3D 銀河（Phase 1）」ミルストーン ✅ 完了（2026-07-05）
+## 直近完了 — 「太陽系の詳細表示（公転/自転速度・地球距離・光速/新幹線）」ミルストーン ✅ 完了（2026-07-06）
+
+太陽系ビュー（`starIndex 0` 限定）を教育的に詳しく。手続き生成の恒星系は現状維持（`isSolar` gate）。
+- **常時ラベル**: 各軌道上に公転速度(km/s)、各惑星 near に自転赤道速度(km/h、金星/天王星は「(逆)」)、太陽 near に「太陽 ・ 公転 220km/s（クリックで詳細）」＋銀河内の進行方向を示す矢印（`SystemScene` に starIndex 0 のとき `ArrowHelper`）
+- **クリック詳細**: 惑星クリックで 公転(速度・周期)/自転/地球からの最接近距離/光速・新幹線の所要時間。地球は「太陽から1AU(母星)」。太陽クリックで銀河公転パネル(220km/s・約2.3億年・銀河中心約2.6万光年・自転約7200km/h)
+- **データ/純関数**: `src/system/solarFacts.ts`（`PLANET_FACTS`/`SUN_FACTS` + `earthClosestApproachAu`/`formatManKm`/`formatLightTravel`(既存 formatLightTime 委譲)/`formatShinkansenTravel`）
+
+- spec: `docs/superpowers/specs/2026-07-06-stellar-voyage-solar-detail-design.md`
+- plan: `docs/superpowers/plans/2026-07-06-stellar-voyage-solar-detail.md`（全4タスク）
+
+**現 HEAD: `659fd85`。範囲 `f704bcb..659fd85` = 4タスク + Sun クリック/ラベル fix(d4765c3) + index クロスチェックテスト(659fd85)。すべて `main`・未 push。**
+opus 最終レビュー「Ready to merge — YES」（Critical/Important 0、5 named risk[solar-only gate/PLANET_FACTS index 整合/Sun クリック cone/facts無し不変/ヘルパ数値]健全）。173/173・tsc・build(495KB) 緑。Playwright E2E で全受入基準検証（公転/自転/逆回転ラベル・太陽の進行方向矢印・水星クリック[公転47.4/自転11/最接近9100万km/光5分4秒/新幹線35年]・地球[母星]・太陽クリック[銀河公転]）。実装/レビュー=sonnet、最終=opus。
+E2E-driven fix(d4765c3): 太陽が点ピッキングで背後の背景星に負け拾えない→原点方向の角度判定(SUN_PICK_ANGLE=0.06)で pickStar 前に先取り＋常時ラベル短縮。所見: overview(viewDist40) は内惑星が中心に角度密集しラベルが重なる（拡大で分離＝標準UX、太陽も拡大時にクリック可）。deferred follow-up は progress.md 参照。
+
+## 以前の完了 — 「局部銀河群の 3D 銀河（Phase 1）」ミルストーン ✅ 完了（2026-07-05）
 
 一番ズームアウトした局部銀河群段の DOM 模式図を、天の川銀河とアンドロメダ銀河の **3D 渦巻きパーティクル**に置き換え。
 - **銀河描画**: `src/galaxy/` に決定論生成（`buildGalaxyGeometry` + `mulberry32`、対数螺旋の腕+中心バルジ+円盤厚み）、`GalaxyDisk`（additive Points + `uOpacity` シェーダ）、`LocalGroup`（天の川 seed1 + アンドロメダ seed2 概念 offset `ANDROMEDA_OFFSET_AU=2.4e10` + 現在地マーカー）
