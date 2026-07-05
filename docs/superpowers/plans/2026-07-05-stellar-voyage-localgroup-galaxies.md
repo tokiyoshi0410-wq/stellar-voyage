@@ -560,3 +560,209 @@ git -c commit.gpgsign=false commit -m "feat: add LocalGroup (Milky Way + Androme
 ```
 
 ---
+
+### Task 5: StarField に uOpacity（近傍星野フェードアウト用）
+
+**Files:**
+- Modify: `src/starfield/StarField.ts`（uniforms に `uOpacity` 追加、`setOpacity` メソッド追加）
+- Modify: `src/starfield/starfield.frag.glsl`（`alpha * uOpacity`）
+- Test: `tests/starfield/starField.test.ts`（**既存ファイル** — `buildStarGeometry` を import 済み。`setOpacity` の describe を追記）
+
+**Interfaces:**
+- Consumes: 既存 `StarField`（constructor(columns), `object: THREE.Points`, `setFocus`）
+- Produces: `StarField.setOpacity(o: number): void`。既定 uOpacity=1.0（既存描画は不変）。
+
+> **ゾーン区分:** `uOpacity` 既定 1.0・`setOpacity` が uniform に反映、は **TDD 厳密ゾーン**。フェードの見え方（星の消え方のカーブ）は **実機調整ゾーン**。
+
+- [ ] **Step 1: 失敗するテストを追記** — `tests/starfield/starField.test.ts`
+
+既存ファイルに以下の describe を追記（`new StarField(cols)` の columns の作り方は既存 `tests/starfield/starFieldFocus.test.ts` のヘルパ／パターンを流用してよい。`StarColumns` の実フィールドは `src/catalog/format.ts` に従う。`buildStarGeometry` が読むのは `count`, `x`, `y`, `z`, `ci`, `mag`）:
+
+```ts
+import * as THREE from 'three';
+import { StarField } from '../../src/starfield/StarField';
+import type { StarColumns } from '../../src/catalog/format';
+
+function tinyColumns(n: number): StarColumns {
+  return {
+    count: n,
+    x: new Float32Array(n), y: new Float32Array(n), z: new Float32Array(n),
+    ci: new Float32Array(n), mag: new Float32Array(n),
+  } as StarColumns;
+}
+
+describe('StarField.setOpacity', () => {
+  it('defaults uOpacity to 1.0 and setOpacity updates it', () => {
+    const f = new StarField(tinyColumns(3));
+    const mat = f.object.material as THREE.ShaderMaterial;
+    expect(mat.uniforms.uOpacity!.value).toBe(1.0);
+    f.setOpacity(0.25);
+    expect(mat.uniforms.uOpacity!.value).toBe(0.25);
+  });
+});
+```
+
+（`describe`/`it`/`expect` は既存 import を流用。`StarColumns` の実フィールドが上と異なる場合は format.ts に合わせて補う。）
+
+- [ ] **Step 2: 失敗を確認**
+
+Run: `npx vitest run tests/starfield/starField.test.ts`
+Expected: FAIL（`setOpacity` 未定義 or `uOpacity` uniform 不在）
+
+- [ ] **Step 3: StarField に uOpacity を追加** — `src/starfield/StarField.ts`
+
+uniforms へ 1 行追加（`uPixelScale` の下）:
+
+```ts
+      uPixelScale: { value: 300.0 },
+      uOpacity: { value: 1.0 },
+```
+
+`setFocus` メソッドの後に追記:
+
+```ts
+  setOpacity(o: number): void {
+    this.material.uniforms.uOpacity!.value = o;
+  }
+```
+
+`src/starfield/starfield.frag.glsl` を差し替え:
+
+```glsl
+uniform float uOpacity;
+varying vec3 vColor;
+
+void main() {
+  vec2 uv = gl_PointCoord - vec2(0.5);
+  float d = length(uv);
+  float alpha = 1.0 - smoothstep(0.0, 0.5, d);
+  gl_FragColor = vec4(vColor, alpha * uOpacity);
+}
+```
+
+- [ ] **Step 4: テスト通過を確認**
+
+Run: `npx vitest run tests/starfield/starField.test.ts` → PASS
+Run: `npx vitest run` → 全テスト PASS（既存の星野テストが uOpacity=1.0 で不変であること）
+Run: `npx tsc --noEmit` → エラーなし
+
+- [ ] **Step 5: コミット**（末尾に Co-Authored-By trailer）
+
+```bash
+git add src/starfield/StarField.ts src/starfield/starfield.frag.glsl tests/starfield/starField.test.ts
+git -c commit.gpgsign=false commit -m "feat: add uOpacity to StarField (for local-group crossfade)"
+```
+
+---
+
+### Task 6: app.ts 結線 + 旧 DOM 模式図撤去（描画タスク）
+
+**Files:**
+- Modify: `src/app.ts`
+- Delete: `src/ui/LocalGroupDiagram.ts`
+
+**Interfaces:**
+- Consumes: `LocalGroup`（Task 4）, `localGroupFade`（Task 1）, `StarField.setOpacity`（Task 5）
+- Produces: なし（結線）。**単体テストなし** — 描画タスクのためコントローラが Playwright E2E で検証（Step 8）。
+
+> **ゾーン区分:** 結線の正しさ（フェード・位置・ラベル・旧模式図撤去）は E2E で検証。銀河の見え方・傾き・配置・色・pixelScale の最終調整も **実機調整ゾーン**（このタスク後にコントローラが E2E で詰める）。
+
+- [ ] **Step 1: import 差し替え** — `src/app.ts`
+
+削除: `import { LocalGroupDiagram } from './ui/LocalGroupDiagram';`
+追加（他 import の並びに）:
+
+```ts
+import { LocalGroup } from './galaxy/LocalGroup';
+import { localGroupFade } from './nav/localGroupFade';
+```
+
+- [ ] **Step 2: 生成を差し替え + scene 追加**
+
+`const localGroup = new LocalGroupDiagram(root);` を:
+
+```ts
+  const localGroup = new LocalGroup();
+```
+
+に置換。そして `engine.scene.add(field.object);` の直後に:
+
+```ts
+  engine.scene.add(localGroup.object);
+```
+
+- [ ] **Step 3: frame ループのフェード結線**（`localGroup.setVisible(...)` を置換）
+
+`localGroup.setVisible(scaleInfo.stage === 'localgroup');` の 1 行を、以下 5 行に置換:
+
+```ts
+    const lgFade = localGroupFade(nav.viewDistanceAu);
+    localGroup.object.visible = lgFade > 0;
+    localGroup.setOpacity(lgFade);
+    localGroup.setPosition(-nav.focusWorldAu[0], -nav.focusWorldAu[1], -nav.focusWorldAu[2]);
+    field.setOpacity(1 - lgFade);
+```
+
+- [ ] **Step 4: 現在地・距離ラベルを追加**
+
+`labelItems` を組み立てる `if (fade > 0.5) { ... } else if (...) { ... }` ブロックの**直後**（`slider.setReadout(...)` の前）に追加:
+
+```ts
+    if (lgFade > 0.5) {
+      labelItems.push({ text: '現在地（太陽系）', worldPos: localGroup.markerWorldPos() });
+      labelItems.push({ text: '約250万光年', worldPos: localGroup.midpointWorldPos() });
+    }
+```
+
+- [ ] **Step 5: 旧 DOM 模式図を削除**
+
+```bash
+git rm src/ui/LocalGroupDiagram.ts
+```
+
+`src/ui/LocalGroupDiagram.ts` を import・参照する箇所が app.ts 以外に無いことを確認:
+
+Run: `grep -rn "LocalGroupDiagram" src/` → app.ts の変更後は 0 件であること（0 件を確認）
+
+- [ ] **Step 6: 型・ビルド・全テスト**
+
+Run: `npx tsc --noEmit` → エラーなし
+Run: `npx vitest run` → 全テスト PASS
+Run: `npm run build # CLAUDE_AUDIT_OK` → 成功（bundle 生成）
+
+- [ ] **Step 7: コミット**（末尾に Co-Authored-By trailer）
+
+```bash
+git add src/app.ts
+git -c commit.gpgsign=false commit -m "feat: wire LocalGroup 3D galaxies + crossfade, remove DOM diagram"
+```
+
+- [ ] **Step 8: コントローラが Playwright E2E で受入基準を検証**
+
+`npm run dev`（→ `http://localhost:5180`）を起動し、Playwright MCP で:
+1. ホイールでズームアウト → 近傍星野が滑らかに消え、**2 つの渦巻き銀河**が現れる（天の川・アンドロメダ、腕とバルジが見える）。スクショで目視。
+2. アンドロメダは天の川より大きく、離れて配置。天の川に「現在地（太陽系）」、中間に「約250万光年」ラベル。星名ラベルは出ない。
+3. アンドロメダ方向へ前進（W、ドラッグでアンドロメダを正面に）→ 渦巻きが大きく見える。ズームインで銀河群が消え近傍星野へ戻る。
+4. ドラッグ回転・ホイールズームが効き、クリック・既存パネルを妨げない（`pointer-events` 非干渉）。
+
+**描画タスクのため、Step 8 の E2E が通るまで Task 6 は未完。** 問題があれば修正して再検証。
+
+---
+
+## Self-Review（記入済み — spec との照合）
+
+**Spec coverage:**
+- 概念スケール圧縮（Andromeda 2倍径・3倍先）→ Task 2 定数 ✅
+- 渦巻きパーティクル生成（腕/バルジ/厚み/色勾配、決定論）→ Task 2 ✅
+- 専用シェーダ additive + uOpacity → Task 3 ✅
+- 天の川+アンドロメダ+現在地マーカー+250万光年中点 → Task 4 ✅
+- localGroupFade クロスフェード → Task 1 ✅
+- 近傍星野フェードアウト（StarField uOpacity）→ Task 5 ✅
+- app 結線・旧 DOM 模式図削除・ラベル → Task 6 ✅
+- Playwright 受入基準 1〜4 → Task 6 Step 8 ✅
+
+**Placeholder scan:** 各コード step に完全コードあり。「適切に」等の曖昧語なし。
+
+**Type consistency:** `GalaxyParams`/`buildGalaxyGeometry`/`GalaxyDisk`/`LocalGroup` のシグネチャは Task 2→3→4→6 で一致。`setOpacity(o:number)` は GalaxyDisk/LocalGroup/StarField で同名同型。`markerWorldPos`/`midpointWorldPos` は Task 4 定義 → Task 6 消費で一致。`localGroupFade`/`ANDROMEDA_OFFSET_AU` の参照名一致。
+
+**未解決の実装時判断（実装者が現物で確定）:** `StarColumns` の正確なフィールド（format.ts 参照）、glsl `?raw` の vitest 解決（既存 StarField/PlanetMaterial テストで確認済み）、銀河の傾き/色/pixelScale の見栄えは E2E で微調整可。
