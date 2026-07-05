@@ -23,6 +23,8 @@ import { orbitPosition, planetPhase } from './system/orbit';
 import { LabelLayer, type LabelItem } from './ui/LabelLayer';
 import { nearestStarsPc } from './nav/nearestStars';
 import { PARSEC_IN_LY } from './astro/spectral';
+import { ScalePanel } from './ui/ScalePanel';
+import { scaleInfoFor } from './edu/scaleInfo';
 
 const DRAG_SENS = 0.005;
 const ZOOM_SENS = 0.0015;
@@ -54,6 +56,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
   const infoPanel = new InfoPanel(root);
   const planetPanel = new PlanetPanel(root);
   const labels = new LabelLayer(root);
+  const scalePanel = new ScalePanel(root);
 
   engine.renderer.domElement.style.touchAction = 'none';
 
@@ -195,6 +198,8 @@ export async function startApp(root: HTMLElement): Promise<void> {
     }
 
     // --- ラベル（星名 / 惑星名+距離） ------------------------------------
+    const scaleInfo = scaleInfoFor(nav.viewDistanceAu);
+    scalePanel.update(scaleInfo);
     const labelItems: LabelItem[] = [];
     if (fade > 0.5) {
       labelItems.push({ text: starDisplayName(currentSystem.starIndex, currentSystem.starName), worldPos: [0, 0, 0] });
@@ -202,7 +207,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
         const [px, py, pz] = orbitPosition(p.semiMajorAxisAu, planetPhase(currentSystem.starIndex, i));
         labelItems.push({ text: `${p.name}  ${formatAuDistance(p.semiMajorAxisAu)}`, worldPos: [px, py, pz] });
       });
-    } else {
+    } else if (scaleInfo.stage !== 'galaxy') {
       const cols = catalog.columns;
       for (const s of nearestStarsPc(fp, cols, 15)) {
         const px = cols.x[s.index]!, py = cols.y[s.index]!, pz = cols.z[s.index]!;
