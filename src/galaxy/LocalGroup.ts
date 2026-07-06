@@ -26,7 +26,7 @@ export class LocalGroup {
     // 天の川銀河: 太陽(原点)が銀河中心でなく銀河内の途中に来るよう円盤中心を -SUN_DISK_OFFSET へずらす
     this.milkyWay = new GalaxyDisk(MILKY_WAY, 1);
     this.milkyWay.object.position.set(-SUN_DISK_OFFSET, 0, 0);
-    this.milkyWay.object.rotation.order = 'YXZ';
+    // 既定 Euler order 'XYZ' で rotation.y が円盤面内の自転になる（YXZ にすると歳差でぐらつく）
     this.milkyWay.object.rotation.x = 0.5;
     this.object.add(this.milkyWay.object);
 
