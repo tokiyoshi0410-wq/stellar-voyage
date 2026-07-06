@@ -32,13 +32,16 @@ export function joinExoplanets(ids: StarIds[], nasaRows: NasaRow[]): Record<numb
     else if (r.hostGl && byGl.has(r.hostGl)) idx = byGl.get(r.hostGl);
     else if (r.hostname && byProper.has(r.hostname)) idx = byProper.get(r.hostname);
     if (idx == null) continue;
+    // 軌道長半径が無い惑星は軌道リング/公転/HZ を正しく描けない。1.0 AU を捏造すると
+    // 実在バッジ付きで誤った「ハビタブルゾーン内」を表示しうるため、除外する。
+    if (r.smaxAu == null) continue;
     const estimated = r.radiusEarth == null || r.massEarth == null;
     const radiusEarth = r.radiusEarth ?? 1.0;
     const massEarth = r.massEarth ?? Math.pow(radiusEarth, 3);
     const planet: Planet = {
       name: r.plName,
       type: inferType(radiusEarth),
-      semiMajorAxisAu: r.smaxAu ?? 1.0,
+      semiMajorAxisAu: r.smaxAu,
       radiusEarth,
       massEarth,
       eqTempK: r.eqTempK,

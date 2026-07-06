@@ -38,11 +38,17 @@ describe('scaleInfoFor', () => {
 });
 
 describe('scaleInfoFor local group', () => {
-  it('enters localgroup at 1e10 AU and mentions the Andromeda distance', () => {
+  it('is galaxy below the localgroup boundary and localgroup above it, mentioning Andromeda', () => {
     expect(scaleInfoFor(5e9).stage).toBe('galaxy');
     const info = scaleInfoFor(1e10);
     expect(info.stage).toBe('localgroup');
     expect(info.title).toBe('局部銀河群');
     expect(info.lines.join(' ')).toMatch(/250万光年/);
+  });
+  // 局部銀河群の概念ラベル(app.ts の lgFade>0.5)と縮尺バー非表示(stage==='localgroup')が
+  // 同じ視距離で切り替わるよう、localgroup 境界を localGroupFade の中点(=(3e9+1e10)/2=6.5e9)に合わせる。
+  it('enters localgroup exactly at the localGroupFade midpoint (6.5e9)', () => {
+    expect(scaleInfoFor(6.5e9).stage).toBe('localgroup');
+    expect(scaleInfoFor(6.5e9 - 1).stage).toBe('galaxy');
   });
 });

@@ -77,8 +77,13 @@ export class SystemScene {
         p.semiMajorAxisAu,
         animatedPhase(this.system.starIndex, i, p.semiMajorAxisAu, t),
       );
-      this.planetMeshes[i]!.position.set(x, y, z);
+      const mesh = this.planetMeshes[i]!;
+      mesh.position.set(x, y, z);
       this.ringMeshes.get(i)?.position.set(x, y, z);
+      // 恒星（原点で静止）への方向を新しい公転位置から再計算する。これをしないと
+      // 昼夜境界がコンストラクタ時の初期位置に固定され、公転後に影側が恒星の反対を向く。
+      const dir = (mesh.material as THREE.ShaderMaterial).uniforms.uStarDir!.value as THREE.Vector3;
+      dir.set(-x, -y, -z).normalize();
     });
   }
 

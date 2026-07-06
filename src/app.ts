@@ -99,6 +99,9 @@ export async function startApp(root: HTMLElement): Promise<void> {
       engine.scene.remove(systemScene.root);
       systemScene.dispose();
     }
+    // 別の星系へ移ったら旧星系の情報パネルを閉じる（残留防止）
+    infoPanel.hide();
+    planetPanel.hide();
     const sys = buildStellarSystem(catalog.columns, index, catalog.nameOf(index), exoplanets);
     systemScene = new SystemScene(sys);
     engine.scene.add(systemScene.root);
@@ -144,19 +147,34 @@ export async function startApp(root: HTMLElement): Promise<void> {
         return;
       }
 
-      if (currentSystem.starIndex === 0) {
-        const sun = ss.sunWorldPos();
-        const dx = sun[0] - camAu.x, dy = sun[1] - camAu.y, dz = sun[2] - camAu.z;
-        const dlen = Math.hypot(dx, dy, dz) || 1;
-        const sunDot = (dx * rayDir[0] + dy * rayDir[1] + dz * rayDir[2]) / dlen;
-        if (sunDot > Math.cos(SUN_PICK_ANGLE)) {
+      // 中心星（原点の星球）クリックを角度で先取り。太陽は銀河公転の詳細、他の恒星は通常の星情報。
+      // 星系は原点に描画されカタログ実座標とはズレるため、pickStar では中心星を拾えない（太陽以外も救済）。
+      const sun = ss.sunWorldPos();
+      const dx = sun[0] - camAu.x, dy = sun[1] - camAu.y, dz = sun[2] - camAu.z;
+      const dlen = Math.hypot(dx, dy, dz) || 1;
+      const sunDot = (dx * rayDir[0] + dy * rayDir[1] + dz * rayDir[2]) / dlen;
+      if (sunDot > Math.cos(SUN_PICK_ANGLE)) {
+        if (currentSystem.starIndex === 0) {
           planetPanel.showText(sunGalacticText());
           infoPanel.hide();
-          return;
+        } else {
+          infoPanel.show(describeStar(
+            catalog.columns, currentSystem.starIndex,
+            starDisplayName(currentSystem.starIndex, currentSystem.starName),
+          ));
+          planetPanel.hide();
         }
+        return;
       }
     }
 
+    // 局部銀河群スケールでは星野が概念表示（不可視）。見えていない点は渦巻き銀河のパーティクル
+    // であってカタログ星ではないため、カタログ星のピックを行わない（見えない星の選択を防ぐ）。
+    if (scaleInfoFor(nav.viewDistanceAu).stage === 'localgroup') {
+      infoPanel.hide();
+      planetPanel.hide();
+      return;
+    }
     const fp: [number, number, number] = [
       nav.focusWorldAu[0] / AU_PER_PC,
       nav.focusWorldAu[1] / AU_PER_PC,
@@ -296,12 +314,15 @@ export async function startApp(root: HTMLElement): Promise<void> {
       }
     }
     if (lgFade > 0.5) {
-      labelItems.push({ text: '現在地（太陽系）', worldPos: localGroup.markerWorldPos() });
-      labelItems.push({ text: '約250万光年', worldPos: localGroup.midpointWorldPos() });
+      // 3ラベルは銀河円盤面(y≈0)上にあり、見下ろし投影で同じ画面高さに重なる。
+      // 画面縦に段差(dyPx)を付けて分離する（worldPos は各天体を指したまま）。
+      labelItems.push({ text: '現在地（太陽系）', worldPos: localGroup.markerWorldPos(), dyPx: -22 });
       labelItems.push({
         text: `太陽の銀河公転 ・ 約${(SUN_FACTS.galacticPeriodYr / 1e8).toPrecision(2)}億年で1周（半径約${(SUN_FACTS.galacticCenterLy / 1e4).toFixed(1)}万光年）`,
         worldPos: localGroup.galacticCenterWorldPos(),
+        dyPx: 0,
       });
+      labelItems.push({ text: '約250万光年', worldPos: localGroup.midpointWorldPos(), dyPx: 22 });
     }
     slider.setReadout(speedFromSlider(slider.value()), starDisplayName(currentSystem.starIndex, currentSystem.starName));
 

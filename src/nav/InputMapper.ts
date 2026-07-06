@@ -19,6 +19,9 @@ export class InputMapper {
     this.keys.add(e.code);
   };
   private readonly onKeyUp = (e: KeyboardEvent) => { this.keys.delete(e.code); };
+  // window blur（alt-tab・別窓フォーカス）では keyup/pointerup を取り逃がすため、
+  // 押下状態を全解除する。これがないと押しっぱなしのキー/ドラッグが復帰時に固着する。
+  private readonly onBlur = () => { this.keys.clear(); this.down = false; };
 
   constructor(private readonly target: HTMLElement) {
     target.addEventListener('pointerdown', this.onDown as EventListener);
@@ -30,6 +33,7 @@ export class InputMapper {
     // keydown/keyup must bind to window rather than target (see task-6 fix report).
     window.addEventListener('keydown', this.onKeyDown as EventListener);
     window.addEventListener('keyup', this.onKeyUp as EventListener);
+    window.addEventListener('blur', this.onBlur);
   }
 
   consumeDrag(): { dx: number; dy: number } {
@@ -55,5 +59,6 @@ export class InputMapper {
     this.target.removeEventListener('wheel', this.onWheel as EventListener);
     window.removeEventListener('keydown', this.onKeyDown as EventListener);
     window.removeEventListener('keyup', this.onKeyUp as EventListener);
+    window.removeEventListener('blur', this.onBlur);
   }
 }

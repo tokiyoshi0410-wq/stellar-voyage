@@ -44,4 +44,15 @@ describe('LabelLayer', () => {
     expect(container.children.length).toBe(2); // pool kept
     expect((container.children[1] as HTMLDivElement).style.display).toBe('none'); // extra hidden
   });
+  it('applies an optional dyPx screen offset to the vertical position', () => {
+    const root = rootWithSize();
+    const layer = new LabelLayer(root);
+    const cam = camAtOrigin();
+    const topOf = (el: HTMLDivElement) => parseFloat(el.style.transform.match(/translate\([-\d.]+px, ([-\d.]+)px\)/)![1]!);
+    layer.render([{ text: 'x', worldPos: [0, 0, 0] }], cam, root);
+    const base = topOf(root.querySelector('div')!.children[0] as HTMLDivElement);
+    layer.render([{ text: 'x', worldPos: [0, 0, 0], dyPx: 20 }], cam, root);
+    const shifted = topOf(root.querySelector('div')!.children[0] as HTMLDivElement);
+    expect(shifted - base).toBeCloseTo(20, 5);
+  });
 });

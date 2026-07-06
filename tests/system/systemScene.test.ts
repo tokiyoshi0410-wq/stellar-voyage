@@ -65,5 +65,18 @@ describe('SystemScene.update', () => {
     expect(travelGroup.children[0]!.position.length()).toBe(0);
     scene.dispose();
   });
+  it('re-aims each planet uStarDir toward the (static, origin) star as it orbits', () => {
+    const scene = new SystemScene(system);
+    scene.update(5); // 公転で惑星位置が初期位相から動く
+    for (const mesh of scene.planetMeshes) {
+      const dir = (mesh.material as THREE.ShaderMaterial).uniforms.uStarDir!.value as THREE.Vector3;
+      // 恒星は原点で静止 → 惑星→恒星方向 = normalize(-position)
+      const expected = mesh.position.clone().negate().normalize();
+      expect(dir.x).toBeCloseTo(expected.x, 5);
+      expect(dir.y).toBeCloseTo(expected.y, 5);
+      expect(dir.z).toBeCloseTo(expected.z, 5);
+    }
+    scene.dispose();
+  });
 });
 

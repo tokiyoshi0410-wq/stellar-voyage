@@ -44,6 +44,21 @@ describe('InputMapper', () => {
     expect(m.movement()).toEqual({ forward: 0, right: 0 });
     window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyW' })); // cleanup in case dispose didn't work
   });
+  it('clears held keys and drag on window blur (alt-tab must not leave keys stuck)', () => {
+    const t = makeTarget(); const m = new InputMapper(t.el);
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyW' }));
+    t.fire('pointerdown', {});
+    expect(m.movement()).toEqual({ forward: 1, right: 0 });
+    window.dispatchEvent(new Event('blur'));
+    expect(m.movement()).toEqual({ forward: 0, right: 0 }); // keys cleared
+    t.fire('pointermove', { movementX: 5, movementY: 5 });
+    expect(m.consumeDrag()).toEqual({ dx: 0, dy: 0 });       // down cleared
+    m.dispose();
+    // after dispose(), a later blur must be a no-op (listener removed)
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyW' }));
+    window.dispatchEvent(new Event('blur'));
+    window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyW' }));
+  });
 });
 
 describe('InputMapper.consumePauseToggle', () => {

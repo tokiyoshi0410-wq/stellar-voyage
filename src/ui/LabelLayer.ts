@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 
-export type LabelItem = { text: string; worldPos: [number, number, number] };
+// dyPx: 投影位置からの画面縦オフセット（px）。同じ面上に重なる複数ラベルを縦に分離する用途。
+export type LabelItem = { text: string; worldPos: [number, number, number]; dyPx?: number };
 
 export class LabelLayer {
   private readonly container: HTMLDivElement;
@@ -24,7 +25,7 @@ export class LabelLayer {
         continue;
       }
       const left = (this.v.x * 0.5 + 0.5) * w;
-      const top = (-this.v.y * 0.5 + 0.5) * h;
+      const top = (-this.v.y * 0.5 + 0.5) * h + (item.dyPx ?? 0);
       el.textContent = item.text;
       el.style.transform = `translate(${left}px, ${top}px) translate(0, -50%)`;
       el.style.display = 'block';

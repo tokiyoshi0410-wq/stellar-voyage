@@ -29,4 +29,11 @@ describe('joinExoplanets', () => {
     expect(map[0]![0]!.estimated).toBe(true);
     expect(map[0]![0]!.radiusEarth).toBeGreaterThan(0); // filled with a default
   });
+  it('drops planets with missing semi-major axis instead of fabricating 1.0 AU', () => {
+    // 軌道長半径が無い惑星は軌道リング/公転/HZ を正しく描けない。1.0 AU をでっち上げると
+    // 実在バッジ付きで誤った「ハビタブルゾーン内」を表示しうるため、除外する。
+    const rows = [{ hostname: 'Sirius', hostHd: '48915', hostHip: '', hostGl: '', plName: 'Sirius b', smaxAu: null, radiusEarth: 5, massEarth: 20, eqTempK: 400 }];
+    const map = joinExoplanets(ids, rows);
+    expect(map[0]).toBeUndefined();
+  });
 });
