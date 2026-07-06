@@ -40,7 +40,7 @@ user 承認済み方針（AskUserQuestion「軌道円＋銀河の自転」）。
 
 ### `src/galaxy/LocalGroup.ts`
 - **太陽の公転軌道円**（`THREE.Line` フル円）を追加：半径 `SUN_DISK_OFFSET` の円（局所 XZ 平面 `SUN_DISK_OFFSET*(cos a,0,sin a)`, a∈[0,2π]）を、銀河中心 `(-SUN_DISK_OFFSET,0,0)` に配置＋`rotation.x=0.5`（天の川円盤と同一平面）。→ 太陽（group 原点）は a=0 でこの円上に乗る。淡い金色・半透明。group の子（**自転しない**＝軌道は固定パス）。参照を保持。
-- **天の川の面内自転**: 天の川円盤（XZ 生成・法線=局所Y）を面内で回すため `this.milkyWay.object.rotation.order = 'YXZ'` にし、`rotation.x=0.5`（傾き）維持のまま `update(t)` で `this.milkyWay.object.rotation.y = GALAXY_SPIN_SPEED * t` を設定（Y=面内自転を先に、X=傾きを後に適用）。※軸/order は実機で「腕が面内で回る（円盤がぐらつかない）」ことを確認し調整可（live-tune）。`GALAXY_SPIN_SPEED`≈0.1 rad/秒（live-tune）。
+- **天の川の面内自転**: 天の川円盤（XZ 生成・法線=局所Y）を面内で回す。`rotation.x=0.5`（傾き）維持のまま `update(t)` で `this.milkyWay.object.rotation.y = GALAXY_SPIN_SPEED * t` を設定。**⚠️ 実装訂正(d3bdd9b): Euler order は既定の `'XYZ'` を使う（`rotation.order` は設定しない）。既定 XYZ は行列 `Rx·Ry` ＝ 傾いた法線まわりの面内自転で正しい。当初 spec が指示した `'YXZ'`（`Ry·Rx`）は spin が world Y まわりになり円盤が歳差でぐらつくため誤り。Three.js の order 文字列は「行列積の並び」であって「回転を適用する順」ではない点に注意。**※軸/order は実機で「腕が面内で回る（円盤がぐらつかない）」ことを確認し調整可（live-tune）。`GALAXY_SPIN_SPEED`≈0.1 rad/秒（live-tune）。
 - `update(t: number): void` を追加（上記の自転設定）。`galacticCenterWorldPos(): [number,number,number]`（天の川 `milkyWay.object` の world 位置）を追加（ラベル位置用）。
 - `setOpacity(o)` で軌道円の opacity も設定。`dispose()` で軌道円を破棄。
 - マーカー（現在地=太陽）は原点のまま（変更なし）。軌道円は固定・太陽固定・腕が回る＝銀河公転を表現。

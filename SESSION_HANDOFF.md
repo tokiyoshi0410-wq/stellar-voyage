@@ -17,7 +17,18 @@
   型別 GLSL 惑星シェーダー（昼夜境界+大気リム）、NASA 実在系外惑星 310 系統結合（実在バッジ）、
   ハビタブルゾーン判定。惑星クリックで日本語 PlanetPanel。
 
-## 直近完了 — 「恒星系の公転アニメーション」ミルストーン ✅ 完了（2026-07-06）
+## 直近完了 — 「太陽の銀河公転（実スケール・銀河ビュー）」ミルストーン ✅ 完了（2026-07-06）
+
+太陽の銀河公転を実スケールで表現。太陽系ビューに描いていた模式的な銀河公転円（実際は約5,500万倍で惑星と同画面に描けない）は撤去し、**銀河（天の川）ビュー**で実比率の公転軌道円＋天の川の自転として見せる。
+- **太陽系ビュー（撤去）**: `SystemScene` の金色公転円・道標・系トラベル(`setTravelAngle`)を削除、`src/system/galacticPath.ts`(+test) 削除。太陽は中心静止。惑星の公転アニメ（前ミルストーン）＋停止ボタン（`PauseButton`＋Space・`if(!paused)animT+=dt`、sun-motion-pause 由来・維持）は継続。太陽ラベル「太陽 ・ 公転 220km/s（クリックで詳細）」。`travelGroup` は原点固定で残置し `planetWorldPos`/`sunWorldPos` の world 位置ベースのラベル/クリックは不変。
+- **銀河ビュー（追加）** `src/galaxy/LocalGroup.ts`: 太陽公転軌道円（`THREE.Line` フル円・半径 `SUN_DISK_OFFSET`=天の川半径×0.55≈実際の太陽位置52%と一致・銀河中心中心・円盤面内 `rotation.x=0.5`→太陽=現在地マーカーが a=0 で円上）。`update(t)` で天の川を面内自転（`rotation.y=GALAXY_SPIN_SPEED*t`・**Euler order は既定 'XYZ'＝Rx·Ry=傾いた法線周り。'YXZ' は歳差でぐらつくので不可**＝d3bdd9b で訂正）。`galacticCenterWorldPos()`。`app.ts` が毎フレーム `localGroup.update(animT)`（停止ボタンで自転も凍結）＋ラベル「太陽の銀河公転 ・ 約2.3億年で1周（半径約2.6万光年）」を局部銀河群段に追加。
+- spec: `docs/superpowers/specs/2026-07-06-stellar-voyage-galactic-orbit-realscale-design.md` / plan: `docs/superpowers/plans/2026-07-06-stellar-voyage-galactic-orbit-realscale.md`（全3タスク）
+
+**現 HEAD: `216a81b`。範囲 `2fe0dc1..216a81b` = 3タスク（4b476b9 Part A 撤去 / 26dc8cc LocalGroup 軌道円+自転 / d3bdd9b YXZ→既定XYZ 訂正 / 216a81b app 結線）。すべて `main`・未 push。**
+opus 最終レビュー「Ready to merge — YES」（Critical/Important 0、Part A 撤去完全・Euler 修正が数学的に正しいと独立検証・軌道円幾何正確・pause 一貫）。183テスト・tsc・build 緑。Playwright E2E: 太陽系ビュー=金色円/道標無し・太陽静止・惑星公転動く・停止/クリック可。銀河ビュー(大ズームアウト)=天の川の周りに金色公転円・太陽が円上・天の川が面内自転(~17°/3s・ぐらつき無し)・「太陽の銀河公転」ラベル・アンドロメダ静止・既存局部銀河群不変。実装/レビュー=sonnet、最終=opus。
+※経緯: 当初 solar view に 模式円→系トラベル→フル円→連続周回 と反復したが、user「よりリアルに実際の大きさで」を受け「実スケールは solar view に不可能(約5,500万倍)」と判明→ user が「銀河ビューで実スケール周回」を選択し pivot（solar view 円は全撤去、galacticPath も削除）。sun-motion-pause の PauseButton は維持。
+
+## 以前の完了 — 「恒星系の公転アニメーション」ミルストーン ✅ 完了（2026-07-06）
 
 全恒星系で惑星が軌道に沿って公転（時間で回る）。太陽（中心星）は中心に静止。内惑星ほど速い（ケプラー第三法則の相対速度）。惑星メッシュ・ラベル・クリック判定が同じ `animT` と純関数 `animatedPhase` で位置一致し、動く惑星に追従・選択できる。
 - **純関数**（`src/system/orbit.ts`）: `orbitalAngularSpeed(a)=min(ANIM_K·a^-1.5, ANIM_MAX_OMEGA)`（ケプラー・上限クランプ）、`animatedPhase(starIndex,i,a,t)=planetPhase+ω·t`。時間スケール `ANIM_EARTH_PERIOD_SEC=12`（地球12秒/周・live-tune、テストで秒数は固定しない）。
