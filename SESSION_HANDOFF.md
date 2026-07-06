@@ -3,7 +3,18 @@
 > **次セッションはまずこのファイルを読むこと。** 詳細な進捗の一次ソースは
 > `.superpowers/sdd/progress.md`（SDD ledger）。矛盾したら ledger と `git log` を信じる。
 
-## ✅ 直近完了 — 光速パルス（光の遅さ体感）機能（2026-07-06）
+## ✅ 直近完了 — 天の川→アンドロメダ ズームクロスフェード（2026-07-07）
+
+局部銀河群段でズームアウトすると 天の川銀河（我々の現在地）→ アンドロメダ銀河 へクロスフェードで切り替わる演出。**旧「2銀河横並び（重複に見える）」を解消し、常に画面中央は1つの銀河**。完成・Playwright E2E 済み。詳細は `progress.md` の「Galaxy Crossfade」節。
+
+- **現 HEAD: `7668ba5`。範囲 `ae01dd0..7668ba5` = spec+plan+3タスク。全 main・未 push。**
+- 経緯: user「アンドロメダが二つ並んでいる、一つでいい」→ 実は 天の川(現在地)+アンドロメダ の天文的に正しい図(重複バグでない)と判明 → user が案A クロスフェードを選択（brainstorming→spec e589844→plan d64c577→executing-plans インライン実行）。
+- 実装: `andromedaFade`(smoothstep 2e10→3.5e10)＋`localGroupOpacities`(TDD, 1ad42ff)。`LocalGroup` アンドロメダを横オフセット→原点中心化＋`setOpacity(o)`→`setOpacities(mw,and)`(現在地マーカー/公転円は mw 追従, 3760717)。app.ts ラベルを 天の川→「約250万光年」→アンドロメダ に andFade で出し分け(7668ba5)。
+- E2E: 最大ズーム=アンドロメダのみ中央 / 中間帯=2銀河が同一中心で溶け合い「← 約250万光年 →」 / 天の川帯=天の川のみ＋金色公転円＋現在地マーカー。逆再生で太陽系復帰・クリック選択無回帰・fresh reload 後 console 0エラー（E2E 途中の `localGroup.setOpacity` エラーは Task2 編集中の古い HMR 由来で fresh reload で再発せず裏取り済）。
+- Deferred Minor: `ANDROMEDA_OFFSET_AU` が未使用 export に（spec「残置可」・galaxyParams に残置）。中間帯で2銀河が一瞬ブレンドするのは crossfade の性質（端状態はクリーン・違和感あれば `ANDROMEDA_FADE_START/END_AU` 帯幅や微オフセットを live-tune）。
+- スコープ外（据置）: アンドロメダ内部に入る/星野は deferred Phase 2 のまま。
+
+## ✅ 前の完了 — 光速パルス（光の遅さ体感）機能（2026-07-06）
 
 「💡 光を放つ」ボタンで中心星から光の波紋（半透明球）を発射し、経過時間カウンタで「光速でも宇宙では遅い」を体感させる機能。**完成・全6受入基準 Playwright E2E 済み・独立レビュー "Ready to merge — YES"**。詳細は `progress.md` の「Light Pulse」節。
 
