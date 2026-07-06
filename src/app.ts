@@ -41,6 +41,7 @@ const PICK_ANGLE = 0.02;
 const PLANET_PICK_ANGLE = 0.05;
 const SUN_PICK_ANGLE = 0.06; // 太陽(原点)クリック判定の角度（live-tune）
 const FOCUS_HYSTERESIS = 0.9; // 新しい最近傍星へ切り替える距離マージン（境界での往復防止）
+const PULSE_MAX_SECONDS = 60; // 光速パルスの最長寿命（固定光速では太陽系通過に数十秒・実機調整）
 
 function sunGalacticText(): string {
   return `太陽\n銀河公転: ${SUN_FACTS.galacticSpeedKmS} km/s（銀河を約${(SUN_FACTS.galacticPeriodYr / 1e8).toPrecision(2)}億年で1周）\n` +
@@ -84,9 +85,11 @@ export async function startApp(root: HTMLElement): Promise<void> {
   const pulseReadout = new PulseReadout(root);
   let pulseActive = false;
   let pulseRadiusAu = 0;
+  let pulseElapsedSec = 0;
   new EmitButton(root, () => {
     pulseActive = true; // 押すたび先頭から再発射
     pulseRadiusAu = 0;
+    pulseElapsedSec = 0;
     lightPulse.setVisible(true);
   });
 
@@ -372,11 +375,15 @@ export async function startApp(root: HTMLElement): Promise<void> {
     }
     slider.setReadout(speedFromSlider(slider.value()), starDisplayName(currentSystem.starIndex, currentSystem.starName));
 
-    // --- 光速パルス（光の遅さを体感） -----------------------------------
+    // --- 光速パルス（現実の光速で光の遅さを体感） -------------------------
     if (pulseActive) {
-      if (!paused) pulseRadiusAu += pulseGrowthAuPerSec(nav.viewDistanceAu) * dt;
-      if (pulseRadiusAu > nav.viewDistanceAu * 4) {
-        // ビューを大きく超えたら自動終了（際限ない成長を防ぐ）
+      if (!paused) {
+        pulseRadiusAu += pulseGrowthAuPerSec() * dt;
+        pulseElapsedSec += dt;
+      }
+      // 一定時間経過、またはビューを大きく超えたら自動終了（際限ない成長を防ぐ）。
+      // 固定光速では太陽系規模を通過するのに数十秒かかるため主に時間で打ち切る。
+      if (pulseElapsedSec > PULSE_MAX_SECONDS || pulseRadiusAu > nav.viewDistanceAu * 4) {
         pulseActive = false;
         lightPulse.setVisible(false);
         pulseReadout.hide();

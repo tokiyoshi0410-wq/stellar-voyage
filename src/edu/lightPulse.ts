@@ -2,12 +2,15 @@ import { formatLightTime } from './scaleInfo';
 
 // 1 AU を光が進む時間（分・scaleInfo と同値）
 const LIGHT_MIN_PER_AU = 8.317;
-// 波紋が realtime 1秒で現在ビューの何割広がるか（見た目テンポ・実機調整）
-const PULSE_SPEED_FRACTION = 0.35;
+// realtime 1秒あたり何分ぶんの光が進むか（現実の光速の加速倍率・見た目チューニング）。
+// 例: 6 なら「1秒で光の6分ぶん」→ 地球(1AU=8.317光分)に約1.4秒、海王星(30AU=250光分)に約42秒で届く。
+const LIGHT_ACCEL_MIN_PER_SEC = 6;
 
-// 波紋の成長速度(AU/秒)。どのスケールでも画面上一定テンポに見えるよう現在の視距離に比例させる。
-export function pulseGrowthAuPerSec(viewDistanceAu: number): number {
-  return PULSE_SPEED_FRACTION * viewDistanceAu;
+// 波紋の成長速度(AU/秒)。現実の光速を LIGHT_ACCEL_MIN_PER_SEC 倍だけ加速した固定速度で、
+// 視距離に依存しない。どのスケールでも同じ実速度なので太陽系では光の遅さを体感でき、
+// 恒星間・銀河スケールでは光がほとんど動かず見える（＝光が実際にそれほど遅いという事実）。
+export function pulseGrowthAuPerSec(): number {
+  return LIGHT_ACCEL_MIN_PER_SEC / LIGHT_MIN_PER_AU;
 }
 
 // 半径(AU)を光が進むのにかかる時間(分)。

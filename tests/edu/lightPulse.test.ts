@@ -2,11 +2,14 @@ import { describe, it, expect } from 'vitest';
 import { pulseGrowthAuPerSec, pulseLightTimeMin, formatPulseTime, pulseReached } from '../../src/edu/lightPulse';
 
 describe('pulseGrowthAuPerSec', () => {
-  it('is positive and proportional to view distance (constant screen tempo)', () => {
-    expect(pulseGrowthAuPerSec(10)).toBeGreaterThan(0);
-    expect(pulseGrowthAuPerSec(100)).toBeGreaterThan(pulseGrowthAuPerSec(10));
-    // 画面基準で一定に見えるよう視距離に比例（10倍の視距離→10倍の速度）
-    expect(pulseGrowthAuPerSec(100)).toBeCloseTo(pulseGrowthAuPerSec(10) * 10, 5);
+  it('moves at a fixed real-light speed, independent of view distance', () => {
+    // 現実の光速で固定（時間だけ一定倍率で加速）。視距離に依存しない正の定数。
+    // 加速倍率は見た目チューニング値なので厳密値は assert しない（正・有限のみ）。
+    const speed = pulseGrowthAuPerSec();
+    expect(speed).toBeGreaterThan(0);
+    expect(Number.isFinite(speed)).toBe(true);
+    // 光速準拠: 1秒ぶんの成長を光が進むのにかかる時間（分）は正の一定値
+    expect(pulseLightTimeMin(speed)).toBeGreaterThan(0);
   });
 });
 
