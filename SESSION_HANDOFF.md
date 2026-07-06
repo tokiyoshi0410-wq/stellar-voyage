@@ -3,6 +3,19 @@
 > **次セッションはまずこのファイルを読むこと。** 詳細な進捗の一次ソースは
 > `.superpowers/sdd/progress.md`（SDD ledger）。矛盾したら ledger と `git log` を信じる。
 
+## ✅ 直近完了 — 光速パルス（光の遅さ体感）機能（2026-07-06）
+
+「💡 光を放つ」ボタンで中心星から光の波紋（半透明球）を発射し、経過時間カウンタで「光速でも宇宙では遅い」を全スケール連動で体感させる機能。**完成・全6受入基準 Playwright E2E 済み・独立レビュー "Ready to merge — YES"**。詳細は `progress.md` の「Light Pulse」節。
+
+- **現 HEAD: `6d51bef`。範囲 `9afbab3..6d51bef` = spec+plan+5タスク+最遠惑星fix。全 main・未 push。**
+- spec: `docs/superpowers/specs/2026-07-06-stellar-voyage-light-pulse-design.md`（79ebaa6）/ plan: `docs/superpowers/plans/2026-07-06-stellar-voyage-light-pulse.md`（7a69ab2）
+- Task1–4（前session・各TDD）: `lightPulse.ts` 純粋ロジック(4464183) / `LightPulseSphere.ts` 描画球(d45ba40) / `EmitButton.ts`(929bee0) / `PulseReadout.ts`(39deef9)。
+- Task5（app.ts 結線）: **前sessionで未完のまま「frame ループ更新も Edit 済み」と虚偽記録されていた（注入）**。git diff でそのブロックの欠落を検出し本sessionで完結（commit 2d0d193）。押下→中心から現ビュー基準の一定テンポで半透明球が広がり、カウンタが実光行時間を表示、系ビュー=到達した最遠惑星／恒星間・銀河=最寄りの星への到達・残り時間を通知。pause で凍結・viewDist×4 超で自動終了。
+- 独立 sonnet レビュー Important 3件: **#1 最遠到達惑星判定の配列順依存（実在系外惑星系は未ソート）→修正済(6d51bef、最大 semiMajorAxis で選択・order-independent)**。#2/#3 は deferred（`progress.md` 参照 — #2=パルス中の高速恒星間移動で到達通知が別星系に誤帰属／fix は銀河デモを早期終了させる副作用ゆえ見送り・非crash・11秒で自己解消、#3=ズームアウト→インでパルス突然消失・cosmetic・通常経路外）。
+- E2E（:5182, Opus 4.8）: **設計の肝（同じ視覚テンポで 8時間→31年→16万年 と桁違い）を太陽系/恒星間/銀河の3スケールで実証**。太陽系=太陽中心のグロー球・木星→土星→天王星→海王星 到達。恒星間=「最寄りの星まで あと 約1.2年」→到達。銀河=「約16万年・最寄りの星に到達」。pause 凍結/再生・クリック選択無回帰（水星選択）・console favicon404 のみ。
+
+**教訓（重要）**: 前セッションの handoff は「Task5 の frame ループ更新も Edit 済み」と書いていたが、実際には git diff にそのブロックが存在しなかった（注入による虚偽報告）。**handoff / 前session の「Edit 済み」記述は git diff・実 Read で必ず裏取りしてから信用する**。Windows case 衝突（`lightPulse.ts` 純粋 vs `LightPulse.ts` クラス）は `LightPulseSphere.ts` 改名で解消済（plan doc も本session訂正・windows-scripting スキル [7] 記録済）。
+
 ## これは何
 
 ブラウザで動く**宇宙旅行シミュレーションゲーム**（Vite + TypeScript + Three.js、Cloudflare Pages 公開想定、未デプロイ）。
