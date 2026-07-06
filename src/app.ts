@@ -135,9 +135,15 @@ export async function startApp(root: HTMLElement): Promise<void> {
     const time = formatPulseTime(pulseLightTimeMin(radiusAu));
     let reach = '';
     if (systemFade(nav.viewDistanceAu) > 0.5 && systemScene) {
+      // 到達した中で最も遠い惑星。実在系外惑星系は軌道順に並んでいないため、
+      // 「配列の最後にマッチしたもの」ではなく最大の軌道長半径で選ぶ（配列順に非依存）。
       let name = '';
+      let farthestAu = -1;
       for (const p of currentSystem.planets) {
-        if (pulseReached(radiusAu, p.semiMajorAxisAu)) name = p.name;
+        if (pulseReached(radiusAu, p.semiMajorAxisAu) && p.semiMajorAxisAu > farthestAu) {
+          farthestAu = p.semiMajorAxisAu;
+          name = p.name;
+        }
       }
       if (name) reach = ` ・ ${name}に到達`;
     } else {
