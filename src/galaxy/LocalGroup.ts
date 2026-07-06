@@ -10,11 +10,15 @@ const _scratchB = new THREE.Vector3();
 // （中心を原点に置くと「銀河中心=太陽系」と現在地マーカーが二重表示になるバグを防ぐ）。
 const SUN_DISK_OFFSET = MILKY_WAY.radiusAu * 0.55;
 
+// 天の川の面内自転速度 rad/秒（実機調整）
+const GALAXY_SPIN_SPEED = 0.1;
+
 export class LocalGroup {
   readonly object: THREE.Group;
   private readonly milkyWay: GalaxyDisk;
   private readonly andromeda: GalaxyDisk;
   private readonly marker: THREE.Mesh;
+  private readonly orbitLine: THREE.Line;
 
   constructor() {
     this.object = new THREE.Group();
@@ -22,6 +26,7 @@ export class LocalGroup {
     // 天の川銀河: 太陽(原点)が銀河中心でなく銀河内の途中に来るよう円盤中心を -SUN_DISK_OFFSET へずらす
     this.milkyWay = new GalaxyDisk(MILKY_WAY, 1);
     this.milkyWay.object.position.set(-SUN_DISK_OFFSET, 0, 0);
+    this.milkyWay.object.rotation.order = 'YXZ';
     this.milkyWay.object.rotation.x = 0.5;
     this.object.add(this.milkyWay.object);
 
@@ -41,12 +46,27 @@ export class LocalGroup {
     );
     this.marker.position.set(0, 0, 0);
     this.object.add(this.marker);
+
+    // 太陽の銀河公転軌道（実比率）: 銀河中心を中心・半径 SUN_DISK_OFFSET・天の川面内。太陽=原点はこの円上(a=0)。
+    const orbitPts: THREE.Vector3[] = [];
+    for (let i = 0; i <= 128; i++) {
+      const a = (i / 128) * Math.PI * 2;
+      orbitPts.push(new THREE.Vector3(SUN_DISK_OFFSET * Math.cos(a), 0, SUN_DISK_OFFSET * Math.sin(a)));
+    }
+    this.orbitLine = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints(orbitPts),
+      new THREE.LineBasicMaterial({ color: 0xffd479, transparent: true, opacity: 0.5 }),
+    );
+    this.orbitLine.position.set(-SUN_DISK_OFFSET, 0, 0);
+    this.orbitLine.rotation.x = 0.5;
+    this.object.add(this.orbitLine);
   }
 
   setOpacity(o: number): void {
     this.milkyWay.setOpacity(o);
     this.andromeda.setOpacity(o);
     (this.marker.material as THREE.MeshBasicMaterial).opacity = o;
+    (this.orbitLine.material as THREE.LineBasicMaterial).opacity = o;
   }
 
   setPosition(x: number, y: number, z: number): void {
@@ -56,6 +76,16 @@ export class LocalGroup {
   markerWorldPos(): [number, number, number] {
     this.object.updateWorldMatrix(true, true);
     this.marker.getWorldPosition(_scratchA);
+    return [_scratchA.x, _scratchA.y, _scratchA.z];
+  }
+
+  update(t: number): void {
+    this.milkyWay.object.rotation.y = GALAXY_SPIN_SPEED * t;
+  }
+
+  galacticCenterWorldPos(): [number, number, number] {
+    this.object.updateWorldMatrix(true, true);
+    this.milkyWay.object.getWorldPosition(_scratchA);
     return [_scratchA.x, _scratchA.y, _scratchA.z];
   }
 
@@ -75,5 +105,7 @@ export class LocalGroup {
     this.andromeda.dispose();
     this.marker.geometry.dispose();
     (this.marker.material as THREE.Material).dispose();
+    this.orbitLine.geometry.dispose();
+    (this.orbitLine.material as THREE.Material).dispose();
   }
 }

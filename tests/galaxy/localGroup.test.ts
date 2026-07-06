@@ -54,3 +54,28 @@ describe('LocalGroup', () => {
     lg.dispose();
   });
 });
+
+describe('LocalGroup galactic orbit', () => {
+  it('has a Sun galactic-orbit circle line', () => {
+    const lg = new LocalGroup();
+    let lines = 0;
+    lg.object.traverse((o) => { if (o instanceof THREE.Line) lines++; });
+    expect(lines).toBeGreaterThan(0);
+    lg.dispose();
+  });
+  it('update(t) rotates the Milky Way disk (galaxy spin)', () => {
+    const lg = new LocalGroup();
+    lg.update(0);
+    const r0 = (lg.object.children[0] as THREE.Object3D).rotation.y; // children[0] = 天の川円盤
+    lg.update(5);
+    const r5 = (lg.object.children[0] as THREE.Object3D).rotation.y;
+    expect(r5).not.toBe(r0);
+    lg.dispose();
+  });
+  it('galacticCenterWorldPos is offset from the origin (Sun)', () => {
+    const lg = new LocalGroup();
+    const c = lg.galacticCenterWorldPos();
+    expect(Math.hypot(c[0], c[1], c[2])).toBeGreaterThan(0);
+    lg.dispose();
+  });
+});
