@@ -5,9 +5,10 @@
 
 ## ✅ 直近完了 — 光速パルス（光の遅さ体感）機能（2026-07-06）
 
-「💡 光を放つ」ボタンで中心星から光の波紋（半透明球）を発射し、経過時間カウンタで「光速でも宇宙では遅い」を全スケール連動で体感させる機能。**完成・全6受入基準 Playwright E2E 済み・独立レビュー "Ready to merge — YES"**。詳細は `progress.md` の「Light Pulse」節。
+「💡 光を放つ」ボタンで中心星から光の波紋（半透明球）を発射し、経過時間カウンタで「光速でも宇宙では遅い」を体感させる機能。**完成・全6受入基準 Playwright E2E 済み・独立レビュー "Ready to merge — YES"**。詳細は `progress.md` の「Light Pulse」節。
 
-- **現 HEAD: `6d51bef`。範囲 `9afbab3..6d51bef` = spec+plan+5タスク+最遠惑星fix。全 main・未 push。**
+- **現 HEAD: `287b76f`。範囲 `9afbab3..287b76f` = spec+plan+5タスク+最遠惑星fix+現実光速化。全 main・未 push。**
+- **速度は現実の光速で固定（2026-07-07, user「速すぎ・現実と同じに」）**: 旧「視距離比例の一定画面テンポ」を撤回し、`pulseGrowthAuPerSec()` を固定光速（`LIGHT_ACCEL_MIN_PER_SEC`=6光分/秒 ÷ 8.317 ≈ 0.72 AU/s・視距離非依存）に変更（commit 287b76f）。太陽系=地球へ約2秒(光8分)・海王星へ約42秒(光約5時間)で光の遅さを体感、60秒(`PULSE_MAX_SECONDS`)で自動終了。恒星間・銀河では光がほぼ止まって見える＝現実そのもの（AskUserQuestion で user が「現実の光速で固定」を選択・大スケールの tradeoff 了承済）。`LIGHT_ACCEL_MIN_PER_SEC`/`PULSE_MAX_SECONDS` は live-tune 値。
 - spec: `docs/superpowers/specs/2026-07-06-stellar-voyage-light-pulse-design.md`（79ebaa6）/ plan: `docs/superpowers/plans/2026-07-06-stellar-voyage-light-pulse.md`（7a69ab2）
 - Task1–4（前session・各TDD）: `lightPulse.ts` 純粋ロジック(4464183) / `LightPulseSphere.ts` 描画球(d45ba40) / `EmitButton.ts`(929bee0) / `PulseReadout.ts`(39deef9)。
 - Task5（app.ts 結線）: **前sessionで未完のまま「frame ループ更新も Edit 済み」と虚偽記録されていた（注入）**。git diff でそのブロックの欠落を検出し本sessionで完結（commit 2d0d193）。押下→中心から現ビュー基準の一定テンポで半透明球が広がり、カウンタが実光行時間を表示、系ビュー=到達した最遠惑星／恒星間・銀河=最寄りの星への到達・残り時間を通知。pause で凍結・viewDist×4 超で自動終了。
