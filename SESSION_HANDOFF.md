@@ -17,7 +17,24 @@
   型別 GLSL 惑星シェーダー（昼夜境界+大気リム）、NASA 実在系外惑星 310 系統結合（実在バッジ）、
   ハビタブルゾーン判定。惑星クリックで日本語 PlanetPanel。
 
-## 直近完了 — 「太陽の銀河公転（実スケール・銀河ビュー）」ミルストーン ✅ 完了（2026-07-06）
+## 直近完了 — 総点検＆実バグ8件修正バッチ ✅ 完了（2026-07-06）
+
+セッション冒頭に「点検して総合レビュー」依頼。4系統並列レビュー(恒星系/惑星・銀河/航法・app/UI・dead code)+opus 裏取り+Playwright スモークで実バグ8件を検出し、1バッチ修正。純粋4モジュールは TDD、app.ts 統合4件は Playwright E2E 検証。
+- #1 パネル残留（別星系へ飛ぶと旧情報パネルが残る）→ rebuildSystem で hide
+- #2 昼夜ライティングが公転に追従しない（uStarDir 固定）→ SystemScene.update で再計算
+- #3 局部銀河群の3ラベル重なり → LabelLayer に dyPx 追加・縦 -22/0/22 分離
+- #4 NASA 軌道長半径欠損を 1.0 AU 捏造（虚偽 HZ 表示）→ 除外・再生成（310→307系統/453→443惑星）
+- #5 alt-tab でキー固着 → InputMapper に window blur ハンドラ
+- #6 局部銀河群で見えない星がピックされる → stage ガード
+- #7 非太陽系の中心星クリック不能 → 太陽特例を一般化
+- #8 局部銀河群の閾値不整合（概念ラベルと実縮尺バー同時表示）→ 境界 6.5e9 統一
+
+188テスト全緑・tsc・build 495.59KB 緑。8件すべて Playwright E2E で挙動確認。opus 最終レビュー「Ready to merge」（Critical/Important 0、8修正全✓独立検証）。詳細は `progress.md` の「Bug Fix Batch」節。
+
+**現 HEAD: `b81e9dc`。範囲 `70e9ed6..b81e9dc` = 8 bug fixes（1コミット）。全 main・未 push。**
+Deferred（非ブロッキング）: app.ts の #1/#6/#7 は単体テスト不在で E2E 頼み・scaleInfo.test 境界一点(v==6.5e9)の測度ゼロ齟齬。なお総点検で見つけた**技術的負債**（dead code 6ファイル179行+テスト17件 / README 全面旧仕様 / git リモート未設定＝バックアップゼロ / app.ts テストゼロ / カタログ↔exoplanets index 整合保証なし）は今回のバグ修正には含めず未対応。
+
+## 前の完了 — 「太陽の銀河公転（実スケール・銀河ビュー）」ミルストーン ✅ 完了（2026-07-06）
 
 太陽の銀河公転を実スケールで表現。太陽系ビューに描いていた模式的な銀河公転円（実際は約5,500万倍で惑星と同画面に描けない）は撤去し、**銀河（天の川）ビュー**で実比率の公転軌道円＋天の川の自転として見せる。
 - **太陽系ビュー（撤去）**: `SystemScene` の金色公転円・道標・系トラベル(`setTravelAngle`)を削除、`src/system/galacticPath.ts`(+test) 削除。太陽は中心静止。惑星の公転アニメ（前ミルストーン）＋停止ボタン（`PauseButton`＋Space・`if(!paused)animT+=dt`、sun-motion-pause 由来・維持）は継続。太陽ラベル「太陽 ・ 公転 220km/s（クリックで詳細）」。`travelGroup` は原点固定で残置し `planetWorldPos`/`sunWorldPos` の world 位置ベースのラベル/クリックは不変。
