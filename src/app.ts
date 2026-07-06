@@ -30,6 +30,10 @@ import { ScaleBar } from './ui/ScaleBar';
 import { LocalGroup } from './galaxy/LocalGroup';
 import { localGroupFade } from './nav/localGroupFade';
 import { PLANET_FACTS, SUN_FACTS, earthClosestApproachAu, formatOrbitalKmH } from './system/solarFacts';
+import { LightPulseSphere } from './edu/LightPulseSphere';
+import { EmitButton } from './ui/EmitButton';
+import { PulseReadout } from './ui/PulseReadout';
+import { pulseGrowthAuPerSec, pulseLightTimeMin, formatPulseTime, pulseReached } from './edu/lightPulse';
 
 const DRAG_SENS = 0.005;
 const ZOOM_SENS = 0.0015;
@@ -75,6 +79,17 @@ export async function startApp(root: HTMLElement): Promise<void> {
   const scaleBar = new ScaleBar(root);
   const localGroup = new LocalGroup();
 
+  // 光速パルス（光の遅さを体感）
+  const lightPulse = new LightPulseSphere();
+  const pulseReadout = new PulseReadout(root);
+  let pulseActive = false;
+  let pulseRadiusAu = 0;
+  new EmitButton(root, () => {
+    pulseActive = true; // 押すたび先頭から再発射
+    pulseRadiusAu = 0;
+    lightPulse.setVisible(true);
+  });
+
   engine.renderer.domElement.style.touchAction = 'none';
 
   window.addEventListener('resize', () => engine.resize(window.innerWidth, window.innerHeight));
@@ -92,6 +107,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
   const field = new StarField(catalog.columns);
   engine.scene.add(field.object);
   engine.scene.add(localGroup.object);
+  engine.scene.add(lightPulse.object);
 
   let systemScene: SystemScene | null = null;
   function rebuildSystem(index: number) {
@@ -114,6 +130,30 @@ export async function startApp(root: HTMLElement): Promise<void> {
   field.setFocus([0, 0, 0], 0); // 太陽は系ビューで表示するため星野側では隠す
 
   const camAu = new THREE.Vector3();
+
+  function pulseReadoutText(radiusAu: number): string {
+    const time = formatPulseTime(pulseLightTimeMin(radiusAu));
+    let reach = '';
+    if (systemFade(nav.viewDistanceAu) > 0.5 && systemScene) {
+      let name = '';
+      for (const p of currentSystem.planets) {
+        if (pulseReached(radiusAu, p.semiMajorAxisAu)) name = p.name;
+      }
+      if (name) reach = ` ・ ${name}に到達`;
+    } else {
+      const fp: [number, number, number] = [
+        nav.focusWorldAu[0] / AU_PER_PC, nav.focusWorldAu[1] / AU_PER_PC, nav.focusWorldAu[2] / AU_PER_PC,
+      ];
+      const near = nearestStarsPc(fp, catalog.columns, 2).find((s) => s.index !== nav.focusStarIndex);
+      if (near) {
+        const targetAu = near.distPc * AU_PER_PC;
+        reach = pulseReached(radiusAu, targetAu)
+          ? ' ・ 最寄りの星に到達'
+          : ` ・ 最寄りの星まで あと ${formatPulseTime(pulseLightTimeMin(targetAu - radiusAu))}`;
+      }
+    }
+    return `光の経過時間: ${time}${reach}`;
+  }
 
   // --- クリック選択（ドラッグと区別） ----------------------------------------
   let downPos = { x: 0, y: 0 };
@@ -325,6 +365,20 @@ export async function startApp(root: HTMLElement): Promise<void> {
       labelItems.push({ text: '約250万光年', worldPos: localGroup.midpointWorldPos(), dyPx: 22 });
     }
     slider.setReadout(speedFromSlider(slider.value()), starDisplayName(currentSystem.starIndex, currentSystem.starName));
+
+    // --- 光速パルス（光の遅さを体感） -----------------------------------
+    if (pulseActive) {
+      if (!paused) pulseRadiusAu += pulseGrowthAuPerSec(nav.viewDistanceAu) * dt;
+      if (pulseRadiusAu > nav.viewDistanceAu * 4) {
+        // ビューを大きく超えたら自動終了（際限ない成長を防ぐ）
+        pulseActive = false;
+        lightPulse.setVisible(false);
+        pulseReadout.hide();
+      } else {
+        lightPulse.update(pulseRadiusAu);
+        pulseReadout.update(pulseReadoutText(pulseRadiusAu));
+      }
+    }
 
     engine.render();
     // ラベルは engine.render() の後に投影する。render 内で camera.matrixWorldInverse が更新されるため、
