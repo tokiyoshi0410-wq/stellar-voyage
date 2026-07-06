@@ -9,20 +9,33 @@ describe('LocalGroup', () => {
     expect(points.length).toBe(2);
     lg.dispose();
   });
-  it('setOpacity propagates to both disks', () => {
+  it('setOpacities sets the Milky Way group and Andromeda independently', () => {
     const lg = new LocalGroup();
-    lg.setOpacity(0.4);
-    for (const c of lg.object.children) {
-      const m = (c as { material?: { uniforms?: { uOpacity?: { value: number } } } }).material;
-      if (m?.uniforms?.uOpacity) expect(m.uniforms.uOpacity.value).toBe(0.4);
-    }
+    lg.setOpacities(0.3, 0.7);
+    const points = lg.object.children.filter((c) => c.type === 'Points');
+    const mwU = (points[0] as unknown as { material: { uniforms: { uOpacity: { value: number } } } })
+      .material.uniforms.uOpacity.value;
+    const andU = (points[1] as unknown as { material: { uniforms: { uOpacity: { value: number } } } })
+      .material.uniforms.uOpacity.value;
+    expect(mwU).toBe(0.3);   // children[0] = 天の川
+    expect(andU).toBe(0.7);  // children[1] = アンドロメダ
+    // 現在地マーカー(Mesh)と公転円(Line)は我々の銀河の要素なので天の川側に追従する
     let markerOpacity: number | undefined;
+    let lineOpacity: number | undefined;
     lg.object.traverse((o) => {
-      if (o.type === 'Mesh') {
-        markerOpacity = (o as unknown as { material: { opacity: number } }).material.opacity;
-      }
+      if (o.type === 'Mesh') markerOpacity = (o as unknown as { material: { opacity: number } }).material.opacity;
+      if (o instanceof THREE.Line) lineOpacity = (o as unknown as { material: { opacity: number } }).material.opacity;
     });
-    expect(markerOpacity).toBe(0.4);
+    expect(markerOpacity).toBe(0.3);
+    expect(lineOpacity).toBe(0.3);
+    lg.dispose();
+  });
+  it('centers Andromeda at the group origin (crossfade, not side-by-side)', () => {
+    const lg = new LocalGroup();
+    const points = lg.object.children.filter((c) => c.type === 'Points');
+    const andCenter = new THREE.Vector3();
+    points[1]!.getWorldPosition(andCenter); // children[1] = アンドロメダ
+    expect(andCenter.length()).toBeLessThan(1e8); // 横オフセット撤去＝原点中心
     lg.dispose();
   });
   it('midpointWorldPos reflects setPosition', () => {

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { GalaxyDisk } from './GalaxyDisk';
-import { MILKY_WAY, ANDROMEDA, ANDROMEDA_OFFSET_AU } from './galaxyParams';
+import { MILKY_WAY, ANDROMEDA } from './galaxyParams';
 
 const _scratchA = new THREE.Vector3();
 const _scratchB = new THREE.Vector3();
@@ -30,9 +30,9 @@ export class LocalGroup {
     this.milkyWay.object.rotation.x = 0.5;
     this.object.add(this.milkyWay.object);
 
-    // アンドロメダ銀河（概念距離だけ離し、別角度に傾ける）
+    // アンドロメダ銀河（外から眺める＝銀河中心を画面中央=原点に。ズームアウトで天の川とクロスフェード）
     this.andromeda = new GalaxyDisk(ANDROMEDA, 2);
-    this.andromeda.object.position.set(ANDROMEDA_OFFSET_AU - SUN_DISK_OFFSET, 0, 0);
+    this.andromeda.object.position.set(0, 0, 0);
     this.andromeda.object.rotation.x = 0.7;
     this.andromeda.object.rotation.z = 0.3;
     this.object.add(this.andromeda.object);
@@ -62,11 +62,11 @@ export class LocalGroup {
     this.object.add(this.orbitLine);
   }
 
-  setOpacity(o: number): void {
-    this.milkyWay.setOpacity(o);
-    this.andromeda.setOpacity(o);
-    (this.marker.material as THREE.MeshBasicMaterial).opacity = o;
-    (this.orbitLine.material as THREE.LineBasicMaterial).opacity = o;
+  setOpacities(milkyWay: number, andromeda: number): void {
+    this.milkyWay.setOpacity(milkyWay);
+    this.andromeda.setOpacity(andromeda);
+    (this.marker.material as THREE.MeshBasicMaterial).opacity = milkyWay;
+    (this.orbitLine.material as THREE.LineBasicMaterial).opacity = milkyWay;
   }
 
   setPosition(x: number, y: number, z: number): void {

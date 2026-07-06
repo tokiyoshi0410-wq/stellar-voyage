@@ -28,7 +28,7 @@ import { scaleInfoFor } from './edu/scaleInfo';
 import { scaleBarFor } from './edu/scaleBar';
 import { ScaleBar } from './ui/ScaleBar';
 import { LocalGroup } from './galaxy/LocalGroup';
-import { localGroupFade } from './nav/localGroupFade';
+import { localGroupFade, localGroupOpacities } from './nav/localGroupFade';
 import { PLANET_FACTS, SUN_FACTS, earthClosestApproachAu, formatOrbitalKmH } from './system/solarFacts';
 import { LightPulseSphere } from './edu/LightPulseSphere';
 import { EmitButton } from './ui/EmitButton';
@@ -321,7 +321,8 @@ export async function startApp(root: HTMLElement): Promise<void> {
     scaleBar.setVisible(scaleInfo.stage !== 'localgroup');
     const lgFade = localGroupFade(nav.viewDistanceAu);
     localGroup.object.visible = lgFade > 0;
-    localGroup.setOpacity(lgFade);
+    const lgOpacities = localGroupOpacities(nav.viewDistanceAu);
+    localGroup.setOpacities(lgOpacities.milkyWay, lgOpacities.andromeda);
     localGroup.setPosition(-nav.focusWorldAu[0], -nav.focusWorldAu[1], -nav.focusWorldAu[2]);
     localGroup.update(animT);
     field.setOpacity(1 - lgFade);
