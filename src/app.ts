@@ -256,6 +256,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
     localGroup.object.visible = lgFade > 0;
     localGroup.setOpacity(lgFade);
     localGroup.setPosition(-nav.focusWorldAu[0], -nav.focusWorldAu[1], -nav.focusWorldAu[2]);
+    localGroup.update(animT);
     field.setOpacity(1 - lgFade);
     const labelItems: LabelItem[] = [];
     if (fade > 0.5 && systemScene) {
@@ -297,6 +298,10 @@ export async function startApp(root: HTMLElement): Promise<void> {
     if (lgFade > 0.5) {
       labelItems.push({ text: '現在地（太陽系）', worldPos: localGroup.markerWorldPos() });
       labelItems.push({ text: '約250万光年', worldPos: localGroup.midpointWorldPos() });
+      labelItems.push({
+        text: `太陽の銀河公転 ・ 約${(SUN_FACTS.galacticPeriodYr / 1e8).toPrecision(2)}億年で1周（半径約${(SUN_FACTS.galacticCenterLy / 1e4).toFixed(1)}万光年）`,
+        worldPos: localGroup.galacticCenterWorldPos(),
+      });
     }
     slider.setReadout(speedFromSlider(slider.value()), starDisplayName(currentSystem.starIndex, currentSystem.starName));
 
