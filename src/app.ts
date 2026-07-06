@@ -28,7 +28,7 @@ import { scaleInfoFor } from './edu/scaleInfo';
 import { scaleBarFor } from './edu/scaleBar';
 import { ScaleBar } from './ui/ScaleBar';
 import { LocalGroup } from './galaxy/LocalGroup';
-import { localGroupFade, localGroupOpacities } from './nav/localGroupFade';
+import { localGroupFade, localGroupOpacities, andromedaFade } from './nav/localGroupFade';
 import { PLANET_FACTS, SUN_FACTS, earthClosestApproachAu, formatOrbitalKmH } from './system/solarFacts';
 import { LightPulseSphere } from './edu/LightPulseSphere';
 import { EmitButton } from './ui/EmitButton';
@@ -364,15 +364,22 @@ export async function startApp(root: HTMLElement): Promise<void> {
       }
     }
     if (lgFade > 0.5) {
-      // 3ラベルは銀河円盤面(y≈0)上にあり、見下ろし投影で同じ画面高さに重なる。
-      // 画面縦に段差(dyPx)を付けて分離する（worldPos は各天体を指したまま）。
-      labelItems.push({ text: '現在地（太陽系）', worldPos: localGroup.markerWorldPos(), dyPx: -22 });
-      labelItems.push({
-        text: `太陽の銀河公転 ・ 約${(SUN_FACTS.galacticPeriodYr / 1e8).toPrecision(2)}億年で1周（半径約${(SUN_FACTS.galacticCenterLy / 1e4).toFixed(1)}万光年）`,
-        worldPos: localGroup.galacticCenterWorldPos(),
-        dyPx: 0,
-      });
-      labelItems.push({ text: '約250万光年', worldPos: localGroup.midpointWorldPos(), dyPx: 22 });
+      const andFade = andromedaFade(nav.viewDistanceAu);
+      if (andFade < 0.35) {
+        // 天の川が主役。2ラベルは円盤面(y≈0)上で重なるため dyPx で縦分離。
+        labelItems.push({ text: '天の川銀河（現在地）', worldPos: localGroup.markerWorldPos(), dyPx: -14 });
+        labelItems.push({
+          text: `太陽の銀河公転 ・ 約${(SUN_FACTS.galacticPeriodYr / 1e8).toPrecision(2)}億年で1周（半径約${(SUN_FACTS.galacticCenterLy / 1e4).toFixed(1)}万光年）`,
+          worldPos: localGroup.galacticCenterWorldPos(),
+          dyPx: 14,
+        });
+      } else if (andFade <= 0.65) {
+        // クロスフェード中: 2銀河の中点に距離ラベル
+        labelItems.push({ text: '← 約250万光年 → アンドロメダ銀河へ', worldPos: localGroup.midpointWorldPos() });
+      } else {
+        // アンドロメダが主役（原点中心＝markerWorldPos が示す画面中央）
+        labelItems.push({ text: 'アンドロメダ銀河（M31）・天の川から約250万光年', worldPos: localGroup.markerWorldPos() });
+      }
     }
     slider.setReadout(speedFromSlider(slider.value()), starDisplayName(currentSystem.starIndex, currentSystem.starName));
 
