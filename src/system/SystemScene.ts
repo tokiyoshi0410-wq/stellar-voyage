@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import type { StellarSystem, PlanetType } from './types';
 import { orbitPosition, planetPhase, animatedPhase } from './orbit';
 import { makePlanetMaterial } from '../planets/PlanetMaterial';
-import { galacticPathPoint, GAL_MARKER_COUNT } from './galacticPath';
 
 export function planetTypeColor(type: PlanetType): number {
   switch (type) {
@@ -21,7 +20,6 @@ function planetDisplayRadius(radiusEarth: number): number {
 export class SystemScene {
   readonly root = new THREE.Group();
   readonly planetMeshes: THREE.Mesh[] = [];
-  readonly galMarkers: THREE.Mesh[] = [];
   private readonly ringMeshes = new Map<number, THREE.Mesh>();
   private readonly travelGroup = new THREE.Group();
   private readonly _scratch = new THREE.Vector3();
@@ -70,34 +68,6 @@ export class SystemScene {
       }
     });
 
-    if (system.starIndex === 0) {
-      // 太陽の銀河公転の道すじ（模式的）。太陽=原点がこの線の上に乗る。半径/傾き/範囲は見栄え調整可。
-      const pts: THREE.Vector3[] = [];
-      for (let i = 0; i <= 128; i++) {
-        const a = (i / 128) * Math.PI * 2;
-        pts.push(new THREE.Vector3(...galacticPathPoint(a)));
-      }
-      const orbitLine = new THREE.Line(
-        new THREE.BufferGeometry().setFromPoints(pts),
-        new THREE.LineBasicMaterial({ color: 0xffd479, transparent: true, opacity: 0.7 }),
-      );
-      this.root.add(orbitLine);
-
-      // 道標マーカー: 金の弧に沿って流れて太陽の移動を示す。弧と同じ傾きのグループ配下。
-      const markerGroup = new THREE.Group();
-      for (let k = 0; k < GAL_MARKER_COUNT; k++) {
-        const m = new THREE.Mesh(
-          new THREE.SphereGeometry(0.4, 12, 8),
-          new THREE.MeshBasicMaterial({ color: 0xffd479, transparent: true, opacity: 0.85 }),
-        );
-        const [x, y, z] = galacticPathPoint(((k + 0.5) / GAL_MARKER_COUNT) * Math.PI * 2);
-        m.position.set(x, y, z);
-        this.galMarkers.push(m);
-        markerGroup.add(m);
-      }
-      this.root.add(markerGroup);
-    }
-
     this.travelGroup.add(new THREE.PointLight(0xffffff, 2, 0, 0));
   }
 
@@ -122,12 +92,6 @@ export class SystemScene {
     this.root.updateWorldMatrix(true, true);
     this.travelGroup.getWorldPosition(this._scratch);
     return [this._scratch.x, this._scratch.y, this._scratch.z];
-  }
-
-  /** 系全体を銀河公転円に沿って angle(rad) だけ進める。app 側が viewDistance 比例で毎フレーム設定。 */
-  setTravelAngle(angle: number): void {
-    const [x, y, z] = galacticPathPoint(angle);
-    this.travelGroup.position.set(x, y, z);
   }
 
   dispose(): void {

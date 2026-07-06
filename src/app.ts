@@ -30,7 +30,6 @@ import { ScaleBar } from './ui/ScaleBar';
 import { LocalGroup } from './galaxy/LocalGroup';
 import { localGroupFade } from './nav/localGroupFade';
 import { PLANET_FACTS, SUN_FACTS, earthClosestApproachAu, formatOrbitalKmH } from './system/solarFacts';
-import { SYSTEM_TRAVEL_SPEED } from './system/galacticPath';
 
 const DRAG_SENS = 0.005;
 const ZOOM_SENS = 0.0015;
@@ -233,8 +232,6 @@ export async function startApp(root: HTMLElement): Promise<void> {
     // --- フェード（ズームアウトで恒星系→星野へ） ----------------------------
     if (systemScene) {
       systemScene.update(animT);
-      const inSolarView = currentSystem.starIndex === 0 && fade > 0.5;
-      systemScene.setTravelAngle(inSolarView ? animT * SYSTEM_TRAVEL_SPEED : 0);
       systemScene.root.traverse((o) => {
         const mat = (o as THREE.Mesh).material;
         if (!mat) return;
@@ -266,7 +263,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
       const isSolar = currentSystem.starIndex === 0;
       if (isSolar) {
         labelItems.push({
-          text: `太陽 ・ 銀河を ${SUN_FACTS.galacticSpeedKmS}km/s で移動中（クリックで詳細）`,
+          text: `太陽 ・ 公転 ${SUN_FACTS.galacticSpeedKmS}km/s（クリックで詳細）`,
           worldPos: ss.sunWorldPos(),
         });
       } else {
