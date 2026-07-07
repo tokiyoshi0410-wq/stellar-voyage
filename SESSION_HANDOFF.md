@@ -3,7 +3,18 @@
 > **次セッションはまずこのファイルを読むこと。** 詳細な進捗の一次ソースは
 > `.superpowers/sdd/progress.md`（SDD ledger）。矛盾したら ledger と `git log` を信じる。
 
-## ✅ 直近完了 — 天の川→アンドロメダ ズームクロスフェード（2026-07-07）
+## ✅ 直近完了 — 光速バー（光速パルスを作り替え）（2026-07-07）
+
+「💡 光を放つ」の演出を、太陽から広がる 3D 半透明球パルスから、**画面上部の横一本『光速バー』**に作り替え。左＝地球（現在地）、右＝海王星。光を放つと疑似的な光マーカーが左→右へ光速で移動し、惑星（火星〜海王星の目盛り）を通過。詳細は `progress.md` の「Light Bar」節。
+
+- **現 HEAD: `fddc12f`。全 main・未 push。**
+- 経緯: 現実光速化(accel=6)後、user「木星は光で34分と出ているのに数秒で着く=速すぎ」→ accel 6→1(1光分≒1秒, 286af11) → user「全ての光の基準を地球からに統一。パルスを地球から放たなくても、上部にバーを出し光速で左→右に動く単純なもので良い」→ 3D球撤去し光速バーへ(fddc12f)。
+- **光の基準を地球に統一**: バーの惑星位置は `earthClosestApproachAu(|a-1|)`（惑星クリックのパネルと同じ関数）。木星は地球から 4.2 AU＝**約34分**（旧パルスの太陽基準「43分」を廃し統一）。速度 1光分≒1秒で木星に約35秒。
+- 実装: `src/edu/lightBar.ts`(TDD: barStops/barRightAu/barFraction/reachedStop/barReadoutText)＋`src/ui/LightBar.ts`(上部トラック+惑星目盛り[隣接は上下段]+光マーカー+経過時間, left:22%/width:60%)。app.ts で結線、`LightPulseSphere.ts`/`PulseReadout.ts`＋各テストは**撤去（削除）**。`lightPulse.ts`(pulseGrowthAuPerSec 等)は bar が再利用で維持。
+- E2E(:5182): バー上部表示・地球〜海王星6ラベル可読・マーカー左→右・火星4秒/木星35秒(34分59秒)・pause 凍結(38分で停止)・console 0エラー。tsc/208テスト/build 499KB 緑。
+- Deferred Minor: 線形距離バーで内惑星が左に密集(段違いで緩和)・海王星まで実時間約4分・恒星間/銀河の「最寄りの星まで」演出は撤去(太陽系バーのみ・シンプル優先 user 承認)。
+
+## ✅ 前の完了 — 天の川→アンドロメダ ズームクロスフェード（2026-07-07）
 
 局部銀河群段でズームアウトすると 天の川銀河（我々の現在地）→ アンドロメダ銀河 へクロスフェードで切り替わる演出。**旧「2銀河横並び（重複に見える）」を解消し、常に画面中央は1つの銀河**。完成・Playwright E2E 済み。詳細は `progress.md` の「Galaxy Crossfade」節。
 
@@ -14,7 +25,9 @@
 - Deferred Minor: `ANDROMEDA_OFFSET_AU` が未使用 export に（spec「残置可」・galaxyParams に残置）。中間帯で2銀河が一瞬ブレンドするのは crossfade の性質（端状態はクリーン・違和感あれば `ANDROMEDA_FADE_START/END_AU` 帯幅や微オフセットを live-tune）。
 - スコープ外（据置）: アンドロメダ内部に入る/星野は deferred Phase 2 のまま。
 
-## ✅ 前の完了 — 光速パルス（光の遅さ体感）機能（2026-07-06）
+## ✅ 以前の完了 — 光速パルス（3D球）※現在は上記「光速バー」に作り替え済み（2026-07-06）
+
+> **注**: この節の 3D 半透明球パルス（`LightPulseSphere`）は 2026-07-07 に撤去され、上記「光速バー」に置換済み。以下は当時の記録（`LightPulseSphere.ts`/`PulseReadout.ts` は既に削除。純粋ロジック `lightPulse.ts` は bar が再利用のため現存）。
 
 「💡 光を放つ」ボタンで中心星から光の波紋（半透明球）を発射し、経過時間カウンタで「光速でも宇宙では遅い」を体感させる機能。**完成・全6受入基準 Playwright E2E 済み・独立レビュー "Ready to merge — YES"**。詳細は `progress.md` の「Light Pulse」節。
 
