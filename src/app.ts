@@ -162,13 +162,28 @@ export async function startApp(root: HTMLElement): Promise<void> {
     return { cx, cy, halfW, vHalf };
   }
 
-  // --- クリック選択（ドラッグと区別） ----------------------------------------
+  // --- クリック選択（ドラッグ・ピンチと区別） --------------------------------
   let downPos = { x: 0, y: 0 };
+  let activePointers = 0;   // 現在触れている指/ボタン数
+  let multiTouch = false;   // この接触シーケンス中に二本指以上になったか（ピンチ）
   engine.renderer.domElement.addEventListener('pointerdown', (e: PointerEvent) => {
+    activePointers++;
+    if (activePointers >= 2) multiTouch = true;
     downPos = { x: e.clientX, y: e.clientY };
-    if (e.pointerId != null) engine.renderer.domElement.setPointerCapture(e.pointerId);
+    // ドラッグ中にポインタがキャンバス外へ出ても move/up を受け続ける。合成イベントや
+    // 一部端末で無効 pointerId 例外を投げうるので保護する。
+    if (e.pointerId != null) { try { engine.renderer.domElement.setPointerCapture(e.pointerId); } catch { /* ignore */ } }
   });
+  const endPointer = () => {
+    activePointers = Math.max(0, activePointers - 1);
+    if (activePointers === 0) multiTouch = false;
+  };
+  engine.renderer.domElement.addEventListener('pointercancel', endPointer);
+  window.addEventListener('blur', () => { activePointers = 0; multiTouch = false; });
   engine.renderer.domElement.addEventListener('pointerup', (e: PointerEvent) => {
+    const wasMulti = multiTouch;
+    endPointer();
+    if (wasMulti) return; // ピンチ等の複数指ジェスチャでは選択しない
     if (Math.hypot(e.clientX - downPos.x, e.clientY - downPos.y) >= 5) return;
 
     const rect = engine.renderer.domElement.getBoundingClientRect();
@@ -261,6 +276,8 @@ export async function startApp(root: HTMLElement): Promise<void> {
     nav.orbit(-drag.dx * DRAG_SENS, -drag.dy * DRAG_SENS);
     const w = input.consumeWheel();
     if (w) nav.zoom(Math.exp(w * ZOOM_SENS));
+    const pinch = input.consumePinch();          // スマホの二本指ピンチ（広げる=ズームイン）
+    if (pinch !== 1) nav.zoom(pinch);
     const mv = input.movement();
     nav.translate(mv.forward, mv.right, speedFromSlider(slider.value()), dt);
 
