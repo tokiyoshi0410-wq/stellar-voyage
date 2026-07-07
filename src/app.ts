@@ -30,10 +30,10 @@ import { ScaleBar } from './ui/ScaleBar';
 import { LocalGroup } from './galaxy/LocalGroup';
 import { localGroupFade, localGroupOpacities, andromedaFade } from './nav/localGroupFade';
 import { PLANET_FACTS, SUN_FACTS, earthClosestApproachAu, formatOrbitalKmH } from './system/solarFacts';
-import { LightPulseSphere } from './edu/LightPulseSphere';
 import { EmitButton } from './ui/EmitButton';
-import { PulseReadout } from './ui/PulseReadout';
-import { pulseGrowthAuPerSec, pulseLightTimeMin, formatPulseTime, pulseReached } from './edu/lightPulse';
+import { LightBar } from './ui/LightBar';
+import { pulseGrowthAuPerSec } from './edu/lightPulse';
+import { barStops, barRightAu, barFraction, barReadoutText } from './edu/lightBar';
 
 const DRAG_SENS = 0.005;
 const ZOOM_SENS = 0.0015;
@@ -41,7 +41,6 @@ const PICK_ANGLE = 0.02;
 const PLANET_PICK_ANGLE = 0.05;
 const SUN_PICK_ANGLE = 0.06; // 太陽(原点)クリック判定の角度（live-tune）
 const FOCUS_HYSTERESIS = 0.9; // 新しい最近傍星へ切り替える距離マージン（境界での往復防止）
-const PULSE_MAX_SECONDS = 90; // 光速パルスの最長寿命（1光分≒1秒では木星43秒/土星80秒・実機調整）
 
 function sunGalacticText(): string {
   return `太陽\n銀河公転: ${SUN_FACTS.galacticSpeedKmS} km/s（銀河を約${(SUN_FACTS.galacticPeriodYr / 1e8).toPrecision(2)}億年で1周）\n` +
@@ -80,17 +79,17 @@ export async function startApp(root: HTMLElement): Promise<void> {
   const scaleBar = new ScaleBar(root);
   const localGroup = new LocalGroup();
 
-  // 光速パルス（光の遅さを体感）
-  const lightPulse = new LightPulseSphere();
-  const pulseReadout = new PulseReadout(root);
+  // 光速バー（画面上部・地球基準で光の遅さを体感）
+  const barStopList = barStops();
+  const barRight = barRightAu(barStopList);
+  const lightBar = new LightBar(root, barStopList, barRight);
   let pulseActive = false;
-  let pulseRadiusAu = 0;
-  let pulseElapsedSec = 0;
+  let pulseDistAu = 0;   // 地球から光が進んだ距離(AU)
+  let pulseDoneSec = 0;  // 右端(海王星)到達後の経過（消去用）
   new EmitButton(root, () => {
     pulseActive = true; // 押すたび先頭から再発射
-    pulseRadiusAu = 0;
-    pulseElapsedSec = 0;
-    lightPulse.setVisible(true);
+    pulseDistAu = 0;
+    pulseDoneSec = 0;
   });
 
   engine.renderer.domElement.style.touchAction = 'none';
@@ -110,7 +109,6 @@ export async function startApp(root: HTMLElement): Promise<void> {
   const field = new StarField(catalog.columns);
   engine.scene.add(field.object);
   engine.scene.add(localGroup.object);
-  engine.scene.add(lightPulse.object);
 
   let systemScene: SystemScene | null = null;
   function rebuildSystem(index: number) {
@@ -133,36 +131,6 @@ export async function startApp(root: HTMLElement): Promise<void> {
   field.setFocus([0, 0, 0], 0); // 太陽は系ビューで表示するため星野側では隠す
 
   const camAu = new THREE.Vector3();
-
-  function pulseReadoutText(radiusAu: number): string {
-    const time = formatPulseTime(pulseLightTimeMin(radiusAu));
-    let reach = '';
-    if (systemFade(nav.viewDistanceAu) > 0.5 && systemScene) {
-      // 到達した中で最も遠い惑星。実在系外惑星系は軌道順に並んでいないため、
-      // 「配列の最後にマッチしたもの」ではなく最大の軌道長半径で選ぶ（配列順に非依存）。
-      let name = '';
-      let farthestAu = -1;
-      for (const p of currentSystem.planets) {
-        if (pulseReached(radiusAu, p.semiMajorAxisAu) && p.semiMajorAxisAu > farthestAu) {
-          farthestAu = p.semiMajorAxisAu;
-          name = p.name;
-        }
-      }
-      if (name) reach = ` ・ ${name}に到達`;
-    } else {
-      const fp: [number, number, number] = [
-        nav.focusWorldAu[0] / AU_PER_PC, nav.focusWorldAu[1] / AU_PER_PC, nav.focusWorldAu[2] / AU_PER_PC,
-      ];
-      const near = nearestStarsPc(fp, catalog.columns, 2).find((s) => s.index !== nav.focusStarIndex);
-      if (near) {
-        const targetAu = near.distPc * AU_PER_PC;
-        reach = pulseReached(radiusAu, targetAu)
-          ? ' ・ 最寄りの星に到達'
-          : ` ・ 最寄りの星まで あと ${formatPulseTime(pulseLightTimeMin(targetAu - radiusAu))}`;
-      }
-    }
-    return `光の経過時間: ${time}${reach}`;
-  }
 
   // --- クリック選択（ドラッグと区別） ----------------------------------------
   let downPos = { x: 0, y: 0 };
@@ -383,21 +351,15 @@ export async function startApp(root: HTMLElement): Promise<void> {
     }
     slider.setReadout(speedFromSlider(slider.value()), starDisplayName(currentSystem.starIndex, currentSystem.starName));
 
-    // --- 光速パルス（現実の光速で光の遅さを体感） -------------------------
+    // --- 光速バー（地球から放った光が惑星へ届く様子で光の遅さを体感） -------
     if (pulseActive) {
-      if (!paused) {
-        pulseRadiusAu += pulseGrowthAuPerSec() * dt;
-        pulseElapsedSec += dt;
-      }
-      // 一定時間経過、またはビューを大きく超えたら自動終了（際限ない成長を防ぐ）。
-      // 固定光速では太陽系規模を通過するのに数十秒かかるため主に時間で打ち切る。
-      if (pulseElapsedSec > PULSE_MAX_SECONDS || pulseRadiusAu > nav.viewDistanceAu * 4) {
-        pulseActive = false;
-        lightPulse.setVisible(false);
-        pulseReadout.hide();
-      } else {
-        lightPulse.update(pulseRadiusAu);
-        pulseReadout.update(pulseReadoutText(pulseRadiusAu));
+      if (!paused) pulseDistAu += pulseGrowthAuPerSec() * dt;
+      const frac = barFraction(pulseDistAu, barRight);
+      lightBar.update(frac, barReadoutText(pulseDistAu, barStopList));
+      if (frac >= 1) {
+        // 海王星（右端）到達。少し見せてから消す。
+        if (!paused) pulseDoneSec += dt;
+        if (pulseDoneSec > 3) { pulseActive = false; lightBar.hide(); }
       }
     }
 
