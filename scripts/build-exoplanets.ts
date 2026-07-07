@@ -1,5 +1,5 @@
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
-import { parseHygCsv, type StarIds } from './build-catalog';
+import { parseHygCsv, parseCsvLine, type StarIds } from './build-catalog';
 import type { Planet, PlanetType } from '../src/system/types';
 
 export interface NasaRow {
@@ -32,9 +32,10 @@ export function joinExoplanets(ids: StarIds[], nasaRows: NasaRow[]): Record<numb
     else if (r.hostGl && byGl.has(r.hostGl)) idx = byGl.get(r.hostGl);
     else if (r.hostname && byProper.has(r.hostname)) idx = byProper.get(r.hostname);
     if (idx == null) continue;
-    // 軌道長半径が無い惑星は軌道リング/公転/HZ を正しく描けない。1.0 AU を捏造すると
-    // 実在バッジ付きで誤った「ハビタブルゾーン内」を表示しうるため、除外する。
-    if (r.smaxAu == null) continue;
+    // 軌道長半径が無い/非正の惑星は軌道リング/公転/HZ を正しく描けない。1.0 AU を捏造すると
+    // 実在バッジ付きで誤った「ハビタブルゾーン内」を表示しうるため、除外する（a<=0 は原点固定・
+    // RingGeometry 内径が負になる不正データ）。
+    if (r.smaxAu == null || r.smaxAu <= 0) continue;
     const estimated = r.radiusEarth == null || r.massEarth == null;
     const radiusEarth = r.radiusEarth ?? 1.0;
     const massEarth = r.massEarth ?? Math.pow(radiusEarth, 3);
@@ -57,7 +58,9 @@ export function joinExoplanets(ids: StarIds[], nasaRows: NasaRow[]): Record<numb
 // CLI: NASA CSV（ローカル data/nasa-exoplanets.csv）を読み、HYG と突合して JSON 出力
 function parseNasaCsv(text: string): NasaRow[] {
   const lines = text.split(/\r?\n/).filter((l) => l.length > 0 && !l.startsWith('#'));
-  const header = lines[0]!.split(',');
+  // 列にカンマを含むクオート付きフィールド（惑星名・別名等）で列がずれないよう、
+  // build-catalog と同じクオート対応パーサーを使う（素朴な split(',') は非対称で地雷）。
+  const header = parseCsvLine(lines[0]!);
   const col = (n: string) => header.indexOf(n);
   const iHost = col('hostname'), iHd = col('hd'), iHip = col('hip'), iGl = col('gl'),
     iPl = col('pl_name'), iSma = col('pl_orbsmax'), iRad = col('pl_rade'),
@@ -65,7 +68,7 @@ function parseNasaCsv(text: string): NasaRow[] {
   const num = (v: string | undefined) => { const n = Number(v); return v && Number.isFinite(n) ? n : null; };
   const rows: NasaRow[] = [];
   for (let i = 1; i < lines.length; i++) {
-    const f = lines[i]!.split(',');
+    const f = parseCsvLine(lines[i]!);
     rows.push({
       hostname: (f[iHost] ?? '').trim(),
       hostHd: iHd >= 0 ? (f[iHd] ?? '').trim() : '',

@@ -7,7 +7,7 @@ const MAG_LIMIT = 7.5;
 // bf/gl 等のテキスト列にカンマを含む場合がある。素朴な split(',') では
 // ヘッダーの indexOf が一致せず、カンマ入りフィールドで列がずれるため、
 // クオートを考慮した行パーサーを使う。
-function parseCsvLine(line: string): string[] {
+export function parseCsvLine(line: string): string[] {
   const fields: string[] = [];
   let field = '';
   let inQuotes = false;
