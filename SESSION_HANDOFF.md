@@ -7,8 +7,9 @@
 
 「💡 光を放つ」の演出を、太陽から広がる 3D 半透明球パルスから、**画面上部の横一本『光速バー』**に作り替え。左＝地球（現在地）、右＝海王星。光を放つと疑似的な光マーカーが左→右へ光速で移動し、惑星（火星〜海王星の目盛り）を通過。詳細は `progress.md` の「Light Bar」節。
 
-- **現 HEAD: `fddc12f`。全 main・未 push。**
+- **現 HEAD: `37b1024`。全 main・未 push。**
 - 経緯: 現実光速化(accel=6)後、user「木星は光で34分と出ているのに数秒で着く=速すぎ」→ accel 6→1(1光分≒1秒, 286af11) → user「全ての光の基準を地球からに統一。パルスを地球から放たなくても、上部にバーを出し光速で左→右に動く単純なもので良い」→ 3D球撤去し光速バーへ(fddc12f)。
+- **追加(37b1024)**: ① バーの読み出しに進んだ距離「距離 約N億km」を追加。② **天体の直径定規**（`DiameterRuler`）＝見えている主天体の実幅に沿った横向き定規＋直径ラベル（太陽系=約90億km / 天の川銀河=約10万光年 / アンドロメダ=約20万光年）。app が `objectScreenExtent`（中心+実半径をカメラ行列でスクリーン投影・render 後）で配置、yPx は下部UI回避でクランプ。galaxy ステージ(近傍星野)は disk 無しゆえ定規なし＝意図。
 - **光の基準を地球に統一**: バーの惑星位置は `earthClosestApproachAu(|a-1|)`（惑星クリックのパネルと同じ関数）。木星は地球から 4.2 AU＝**約34分**（旧パルスの太陽基準「43分」を廃し統一）。速度 1光分≒1秒で木星に約35秒。
 - 実装: `src/edu/lightBar.ts`(TDD: barStops/barRightAu/barFraction/reachedStop/barReadoutText)＋`src/ui/LightBar.ts`(上部トラック+惑星目盛り[隣接は上下段]+光マーカー+経過時間, left:22%/width:60%)。app.ts で結線、`LightPulseSphere.ts`/`PulseReadout.ts`＋各テストは**撤去（削除）**。`lightPulse.ts`(pulseGrowthAuPerSec 等)は bar が再利用で維持。
 - E2E(:5182): バー上部表示・地球〜海王星6ラベル可読・マーカー左→右・火星4秒/木星35秒(34分59秒)・pause 凍結(38分で停止)・console 0エラー。tsc/208テスト/build 499KB 緑。
