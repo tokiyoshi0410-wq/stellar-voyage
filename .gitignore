@@ -1,7 +1,9 @@
 node_modules
 dist
+# 元データ CSV（巨大・生成の入力）は追跡しない。
 data/hygdata_v3.csv
 data/nasa-exoplanets.csv
-public/data/hyg.bin
-public/data/hyg-names.json
-public/data/exoplanets.json
+# 生成物 public/data/*（hyg.bin 等・計 ~700KB）は追跡する＝リポジトリ自己完結＋CF Pages 自動ビルド用。
+# SDD 開発スクラッチ（台帳・レビュー diff・タスク brief）は公開リポジトリに含めない。
+.superpowers/
+.playwright-mcp/
