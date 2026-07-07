@@ -28,10 +28,12 @@ import { scaleInfoFor } from './edu/scaleInfo';
 import { scaleBarFor } from './edu/scaleBar';
 import { ScaleBar } from './ui/ScaleBar';
 import { LocalGroup } from './galaxy/LocalGroup';
+import { MILKY_WAY, ANDROMEDA } from './galaxy/galaxyParams';
 import { localGroupFade, localGroupOpacities, andromedaFade } from './nav/localGroupFade';
 import { PLANET_FACTS, SUN_FACTS, earthClosestApproachAu, formatOrbitalKmH } from './system/solarFacts';
 import { EmitButton } from './ui/EmitButton';
 import { LightBar } from './ui/LightBar';
+import { DiameterRuler } from './ui/DiameterRuler';
 import { pulseGrowthAuPerSec } from './edu/lightPulse';
 import { barStops, barRightAu, barFraction, barReadoutText } from './edu/lightBar';
 
@@ -92,6 +94,9 @@ export async function startApp(root: HTMLElement): Promise<void> {
     pulseDoneSec = 0;
   });
 
+  // 天体の直径定規（見えている主天体の実幅＋直径ラベル）
+  const ruler = new DiameterRuler(root);
+
   engine.renderer.domElement.style.touchAction = 'none';
 
   window.addEventListener('resize', () => engine.resize(window.innerWidth, window.innerHeight));
@@ -131,6 +136,30 @@ export async function startApp(root: HTMLElement): Promise<void> {
   field.setFocus([0, 0, 0], 0); // 太陽は系ビューで表示するため星野側では隠す
 
   const camAu = new THREE.Vector3();
+
+  // 天体中心＋実半径をスクリーン座標へ投影し、直径定規の左右端(px)と縦位置を返す。
+  // カメラ行列は engine.render() 後に最新化されるため、この関数は描画後に呼ぶこと。
+  const _rc = new THREE.Vector3();
+  const _re = new THREE.Vector3();
+  const _rRight = new THREE.Vector3();
+  const _rUp = new THREE.Vector3();
+  function objectScreenExtent(center: [number, number, number], radiusWorld: number):
+    { cx: number; cy: number; halfW: number; vHalf: number } | null {
+    const w = engine.renderer.domElement.clientWidth;
+    const h = engine.renderer.domElement.clientHeight;
+    _rc.set(center[0], center[1], center[2]);
+    _rRight.setFromMatrixColumn(engine.camera.matrixWorld, 0); // カメラ右方向（正規化済）
+    _rUp.setFromMatrixColumn(engine.camera.matrixWorld, 1);    // カメラ上方向
+    _re.copy(_rc).project(engine.camera);                      // 中心の NDC
+    if (_re.z < -1 || _re.z > 1) return null;                  // カメラ背後/クリップ範囲外
+    const cx = (_re.x * 0.5 + 0.5) * w;
+    const cy = (-_re.y * 0.5 + 0.5) * h;
+    _re.copy(_rc).addScaledVector(_rRight, radiusWorld).project(engine.camera);
+    const halfW = Math.abs((_re.x * 0.5 + 0.5) * w - cx);
+    _re.copy(_rc).addScaledVector(_rUp, radiusWorld).project(engine.camera);
+    const vHalf = Math.abs((-_re.y * 0.5 + 0.5) * h - cy);
+    return { cx, cy, halfW, vHalf };
+  }
 
   // --- クリック選択（ドラッグと区別） ----------------------------------------
   let downPos = { x: 0, y: 0 };
@@ -351,6 +380,18 @@ export async function startApp(root: HTMLElement): Promise<void> {
     }
     slider.setReadout(speedFromSlider(slider.value()), starDisplayName(currentSystem.starIndex, currentSystem.starName));
 
+    // --- 天体の直径定規：見えている主天体の中心と実半径（world=AU）を決める ---
+    // （投影は engine.render() 後に objectScreenExtent で行う）
+    let rulerInfo: { center: [number, number, number]; radiusWorld: number; label: string } | null = null;
+    if (fade > 0.5 && systemScene && currentSystem.starIndex === 0) {
+      const outerAu = Math.max(...currentSystem.planets.map((p) => p.semiMajorAxisAu)); // 海王星軌道
+      rulerInfo = { center: systemScene.sunWorldPos(), radiusWorld: outerAu, label: '太陽系 ・ 直径 約90億km（光で約8時間）' };
+    } else if (lgFade > 0.5) {
+      rulerInfo = andromedaFade(nav.viewDistanceAu) < 0.5
+        ? { center: localGroup.galacticCenterWorldPos(), radiusWorld: MILKY_WAY.radiusAu, label: '天の川銀河 ・ 直径 約10万光年' }
+        : { center: localGroup.markerWorldPos(), radiusWorld: ANDROMEDA.radiusAu, label: 'アンドロメダ銀河 ・ 直径 約20万光年' };
+    }
+
     // --- 光速バー（地球から放った光が惑星へ届く様子で光の遅さを体感） -------
     if (pulseActive) {
       if (!paused) pulseDistAu += pulseGrowthAuPerSec() * dt;
@@ -367,6 +408,19 @@ export async function startApp(root: HTMLElement): Promise<void> {
     // ラベルは engine.render() の後に投影する。render 内で camera.matrixWorldInverse が更新されるため、
     // 星/惑星と同じ最新姿勢で位置が決まり、ドラッグ/ズーム中に1フレーム遅れて追従するのを防ぐ。
     labels.render(labelItems, engine.camera, engine.renderer.domElement);
+
+    // 直径定規は render 後（カメラ行列が最新）に投影して配置する。
+    if (rulerInfo) {
+      const ext = objectScreenExtent(rulerInfo.center, rulerInfo.radiusWorld);
+      if (ext) {
+        const yPx = Math.min(ext.cy + ext.vHalf + 12, engine.renderer.domElement.clientHeight - 150); // 下部UI(発射/停止ボタン)を避ける
+        ruler.update(ext.cx - ext.halfW, ext.cx + ext.halfW, yPx, rulerInfo.label);
+      } else {
+        ruler.hide();
+      }
+    } else {
+      ruler.hide();
+    }
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);

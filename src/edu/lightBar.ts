@@ -1,5 +1,5 @@
 import { getSolarSystem } from '../system/solarSystem';
-import { earthClosestApproachAu } from '../system/solarFacts';
+import { earthClosestApproachAu, formatManKm } from '../system/solarFacts';
 import { pulseLightTimeMin, formatPulseTime, pulseReached } from './lightPulse';
 
 // 光速バー上の停止点（惑星）。左端=地球(0)からの距離で並ぶ。
@@ -39,9 +39,10 @@ export function reachedStop(lightDistAu: number, stops: BarStop[]): BarStop | nu
   return reached;
 }
 
-// 経過光行時間＋到達通知の文言（地球基準）。
+// 経過光行時間＋進んだ距離＋到達通知の文言（地球基準）。
 export function barReadoutText(lightDistAu: number, stops: BarStop[]): string {
   const time = formatPulseTime(pulseLightTimeMin(lightDistAu));
+  const dist = formatManKm(lightDistAu);
   const r = reachedStop(lightDistAu, stops);
-  return `光の経過時間: ${time}${r ? ` ・ ${r.name}に到達` : ''}`;
+  return `光の経過時間: ${time} ・ 距離 ${dist}${r ? ` ・ ${r.name}に到達` : ''}`;
 }

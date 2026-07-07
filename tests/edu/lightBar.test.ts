@@ -39,9 +39,11 @@ describe('reachedStop', () => {
 });
 
 describe('barReadoutText', () => {
-  it('shows elapsed light time and reached planet', () => {
+  it('shows elapsed light time, distance travelled, and reached planet', () => {
     const s = barStops();
     expect(barReadoutText(4.2, s)).toMatch(/光の経過時間:/);
+    expect(barReadoutText(4.2, s)).toMatch(/距離/);       // 進んだ距離を表示
+    expect(barReadoutText(4.2, s)).toMatch(/億km/);       // 木星は地球から 4.2 AU ≈ 6億km 台
     expect(barReadoutText(4.2, s)).toMatch(/木星に到達/);
     expect(barReadoutText(0.1, s)).not.toMatch(/に到達/); // 未到達
   });
