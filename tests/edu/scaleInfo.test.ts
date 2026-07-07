@@ -40,8 +40,11 @@ describe('scaleInfoFor', () => {
     expect(scaleInfoFor(30000).stage).toBe('interstellar');
     expect(scaleInfoFor(1_000_000).stage).toBe('galaxy');
   });
-  it('interstellar cites the nearest star in light-years; galaxy cites 10万光年', () => {
-    expect(scaleInfoFor(100000).lines.join(' ')).toMatch(/約4\.2年/);
+  it('interstellar explains the surrounding stars (count + nearest-star distance); galaxy cites 10万光年', () => {
+    const lines = scaleInfoFor(100000).lines.join(' ');
+    expect(lines).toMatch(/恒星/);       // まわりの光の点は恒星
+    expect(lines).toMatch(/約2000億/);   // 天の川の星の数（何千億個）
+    expect(lines).toMatch(/約4\.2年/);   // いちばん近い星まで
     expect(scaleInfoFor(2_000_000).lines.join(' ')).toMatch(/10万光年/);
   });
 });

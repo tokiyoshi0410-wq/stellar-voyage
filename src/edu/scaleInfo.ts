@@ -55,7 +55,12 @@ export function scaleInfoFor(viewDistanceAu: number): ScaleInfo {
     return {
       stage: 'interstellar',
       title: '太陽系の外へ',
-      lines: ['太陽系はこんなに小さい！', 'いちばん近い星まで 光で 約4.2年', '光は1秒で地球を7周半'],
+      lines: [
+        '太陽系はこんなに小さい！',
+        'まわりの光の点は ぜんぶ 恒星（太陽の仲間）',
+        'いちばん近い星でも 光で 約4.2年',
+        '天の川銀河には こんな星が 約2000億個',
+      ],
     };
   }
   const edgeAu = NEPTUNE_ORBIT_AU * 2; // 端から端＝海王星軌道の直径
