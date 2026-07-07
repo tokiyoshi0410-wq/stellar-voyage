@@ -3,8 +3,9 @@ import { formatLightTime } from './scaleInfo';
 // 1 AU を光が進む時間（分・scaleInfo と同値）
 const LIGHT_MIN_PER_AU = 8.317;
 // realtime 1秒あたり何分ぶんの光が進むか（現実の光速の加速倍率・見た目チューニング）。
-// 例: 6 なら「1秒で光の6分ぶん」→ 地球(1AU=8.317光分)に約1.4秒、海王星(30AU=250光分)に約42秒で届く。
-const LIGHT_ACCEL_MIN_PER_SEC = 6;
+// 1 なら「1秒 = 光の1分ぶん」→ 到達までの秒数が光行時間の分数と一致する
+// （木星 5.2AU=約43光分 → 約43秒、地球 1AU=約8光分 → 約8秒で届く）。
+const LIGHT_ACCEL_MIN_PER_SEC = 1;
 
 // 波紋の成長速度(AU/秒)。現実の光速を LIGHT_ACCEL_MIN_PER_SEC 倍だけ加速した固定速度で、
 // 視距離に依存しない。どのスケールでも同じ実速度なので太陽系では光の遅さを体感でき、
