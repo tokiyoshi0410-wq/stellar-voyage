@@ -4,10 +4,10 @@ const LIGHT_MIN_PER_AU = 8.317;   // 1 AU を光が進む時間（分）
 const NEPTUNE_ORBIT_AU = 30.1;    // 海王星の軌道長半径（solarSystem.ts と一致）
 const SOLAR_MAX_AU = 30000;       // 太陽系ステージの上限（フェード帯の上端）
 export const GALAXY_MIN_AU = 1_000_000;  // 銀河ステージの下限
-// 局部銀河群ステージの下限。localGroupFade の中点(=(3e9+1e10)/2=6.5e9, lgFade=0.5 の点)に
-// 一致させ、概念ラベル(app.ts の lgFade>0.5)と縮尺バー非表示(stage==='localgroup')を同時化する
-// （両者がズレると「約250万光年」概念ラベルと実スケール縮尺バーが同時表示され矛盾する）。
-const LOCALGROUP_MIN_AU = 6.5e9;
+// 銀河団ステージの下限。天の川が小さくなり、周囲の銀河（大規模構造）が主役になり始める点。
+export const CLUSTER_MIN_AU = 3e10;
+// 超銀河団ステージの下限。多数の銀河団が網目状につながって見えてくる点。
+export const SUPERCLUSTER_MIN_AU = 1.5e11;
 
 export function formatLightTime(lightMinutes: number): string {
   // 総秒数から算出して単位境界の桁上がりを正しく扱う（0.999分→"1分" 等）。
@@ -27,20 +27,31 @@ export function formatLightTime(lightMinutes: number): string {
 }
 
 export interface ScaleInfo {
-  stage: 'solar' | 'interstellar' | 'galaxy' | 'localgroup';
+  stage: 'solar' | 'interstellar' | 'galaxy' | 'cluster' | 'supercluster';
   title: string;
   lines: string[];
 }
 
 export function scaleInfoFor(viewDistanceAu: number): ScaleInfo {
-  if (viewDistanceAu >= LOCALGROUP_MIN_AU) {
+  if (viewDistanceAu >= SUPERCLUSTER_MIN_AU) {
     return {
-      stage: 'localgroup',
-      title: '局部銀河群',
+      stage: 'supercluster',
+      title: '超銀河団',
       lines: [
-        '銀河が 約50個 集まった なかま',
-        '天の川銀河とアンドロメダ銀河は 約250万光年',
-        '光でも 250万年 かかる きょり',
+        '銀河団が さらに 集まった 宇宙の大構造',
+        '網目のように つながって 数万個の銀河',
+        '天の川銀河は その中の ひとつの点',
+      ],
+    };
+  }
+  if (viewDistanceAu >= CLUSTER_MIN_AU) {
+    return {
+      stage: 'cluster',
+      title: '銀河団',
+      lines: [
+        '銀河が 数百〜数千個 集まった なかま',
+        'ひとつひとつの光の点が 銀河（星が数千億個）',
+        '天の川銀河も その中の ひとつ',
       ],
     };
   }

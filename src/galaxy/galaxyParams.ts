@@ -15,8 +15,3 @@ export const MILKY_WAY: GalaxyParams = {
   count: 8000, radiusAu: 3.162e9, armCount: 2, windings: 2.5, thicknessAu: 2.4e8,
   bulgeFraction: 0.15, coreColor: [1.0, 0.95, 0.8], armColor: [0.7, 0.8, 1.0],
 };
-
-export const ANDROMEDA: GalaxyParams = {
-  count: 12000, radiusAu: 6.324e9, armCount: 2, windings: 3.0, thicknessAu: 4e8,
-  bulgeFraction: 0.18, coreColor: [1.0, 0.9, 0.7], armColor: [0.8, 0.85, 1.0],
-};

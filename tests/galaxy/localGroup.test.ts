@@ -3,24 +3,20 @@ import * as THREE from 'three';
 import { LocalGroup } from '../../src/galaxy/LocalGroup';
 
 describe('LocalGroup', () => {
-  it('contains two galaxy Points objects', () => {
+  it('contains exactly one galaxy Points object (the Milky Way; Andromeda removed)', () => {
     const lg = new LocalGroup();
     const points = lg.object.children.filter((c) => c.type === 'Points');
-    expect(points.length).toBe(2);
+    expect(points.length).toBe(1);
     lg.dispose();
   });
-  it('setOpacities sets the Milky Way group and Andromeda independently', () => {
+  it('setOpacity(galaxy, detail) dims the disk by galaxy and the marker/orbit by detail', () => {
     const lg = new LocalGroup();
-    lg.setOpacities(0.3, 0.7);
+    lg.setOpacity(0.8, 0.3);
     const points = lg.object.children.filter((c) => c.type === 'Points');
     const mwU = (points[0] as unknown as { material: { uniforms: { uOpacity: { value: number } } } })
       .material.uniforms.uOpacity.value;
-    const andU = (points[1] as unknown as { material: { uniforms: { uOpacity: { value: number } } } })
-      .material.uniforms.uOpacity.value;
-    expect(mwU).toBe(0.3);   // children[0] = 天の川
-    expect(andU).toBe(0.7);  // children[1] = アンドロメダ
-    // 現在地マーカー(Mesh)と公転円(Line)は我々の銀河の要素なので天の川側に追従する。
-    // マーカーは基準1.0でそのまま、公転円は基準0.5の半透明を保ったまま milkyWay で減衰する。
+    expect(mwU).toBe(0.8); // 円盤は galaxy
+    // 現在地マーカー(Mesh)は detail そのまま、公転円(Line)は基準0.5×detail。
     let markerOpacity: number | undefined;
     let lineOpacity: number | undefined;
     lg.object.traverse((o) => {
@@ -28,23 +24,7 @@ describe('LocalGroup', () => {
       if (o instanceof THREE.Line) lineOpacity = (o as unknown as { material: { opacity: number } }).material.opacity;
     });
     expect(markerOpacity).toBe(0.3);
-    expect(lineOpacity).toBeCloseTo(0.15, 6); // 0.5(基準) × 0.3(milkyWay)
-    lg.dispose();
-  });
-  it('centers Andromeda at the group origin (crossfade, not side-by-side)', () => {
-    const lg = new LocalGroup();
-    const points = lg.object.children.filter((c) => c.type === 'Points');
-    const andCenter = new THREE.Vector3();
-    points[1]!.getWorldPosition(andCenter); // children[1] = アンドロメダ
-    expect(andCenter.length()).toBeLessThan(1e8); // 横オフセット撤去＝原点中心
-    lg.dispose();
-  });
-  it('midpointWorldPos reflects setPosition', () => {
-    const lg = new LocalGroup();
-    const base = lg.midpointWorldPos();
-    lg.setPosition(1000, 0, 0);
-    const moved = lg.midpointWorldPos();
-    expect(moved[0]).toBeCloseTo(base[0] + 1000, 0);
+    expect(lineOpacity).toBeCloseTo(0.15, 6); // 0.5(基準) × 0.3(detail)
     lg.dispose();
   });
   it('markerWorldPos shifts by setPosition delta', () => {

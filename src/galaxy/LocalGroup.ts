@@ -1,9 +1,8 @@
 import * as THREE from 'three';
 import { GalaxyDisk } from './GalaxyDisk';
-import { MILKY_WAY, ANDROMEDA } from './galaxyParams';
+import { MILKY_WAY } from './galaxyParams';
 
 const _scratchA = new THREE.Vector3();
-const _scratchB = new THREE.Vector3();
 
 // 太陽の銀河中心からの距離（天の川円盤内、腕の途中）。太陽=原点(=フォーカス点/近傍星野/
 // ズーム中心)を天の川の腕の上に一致させるため、天の川円盤中心をこの分だけ逆へずらす
@@ -19,7 +18,6 @@ const ORBIT_BASE_OPACITY = 0.5;
 export class LocalGroup {
   readonly object: THREE.Group;
   private readonly milkyWay: GalaxyDisk;
-  private readonly andromeda: GalaxyDisk;
   private readonly marker: THREE.Mesh;
   private readonly orbitLine: THREE.Line;
 
@@ -32,13 +30,6 @@ export class LocalGroup {
     // 既定 Euler order 'XYZ' で rotation.y が円盤面内の自転になる（YXZ にすると歳差でぐらつく）
     this.milkyWay.object.rotation.x = 0.5;
     this.object.add(this.milkyWay.object);
-
-    // アンドロメダ銀河（外から眺める＝銀河中心を画面中央=原点に。ズームアウトで天の川とクロスフェード）
-    this.andromeda = new GalaxyDisk(ANDROMEDA, 2);
-    this.andromeda.object.position.set(0, 0, 0);
-    this.andromeda.object.rotation.x = 0.7;
-    this.andromeda.object.rotation.z = 0.3;
-    this.object.add(this.andromeda.object);
 
     // 現在地マーカー(太陽): group 原点(=太陽=カメラ注視点=近傍星野=ズーム中心)に直接置く。
     // 円盤(milkyWay)の傾きに依存させず原点一致を構造的に保証する（円盤中心は太陽から
@@ -65,12 +56,14 @@ export class LocalGroup {
     this.object.add(this.orbitLine);
   }
 
-  setOpacities(milkyWay: number, andromeda: number): void {
-    this.milkyWay.setOpacity(milkyWay);
-    this.andromeda.setOpacity(andromeda);
-    (this.marker.material as THREE.MeshBasicMaterial).opacity = milkyWay;
-    // 公転円は基準 0.5 の半透明を保つ（milkyWay で直に上書きすると常に最大不透明になっていた）
-    (this.orbitLine.material as THREE.LineBasicMaterial).opacity = ORBIT_BASE_OPACITY * milkyWay;
+  // galaxy: 天の川円盤の不透明度（フェードインして以降も見え続ける）。
+  // detail: 現在地マーカー＋銀河公転円の不透明度（銀河ビューでのみ意味があるので、
+  //         宇宙の大規模構造が主役になったら 0 にして消す）。
+  setOpacity(galaxy: number, detail: number): void {
+    this.milkyWay.setOpacity(galaxy);
+    (this.marker.material as THREE.MeshBasicMaterial).opacity = detail;
+    // 公転円は基準 0.5 の半透明を保つ（detail で直に上書きすると常に最大不透明になっていた）
+    (this.orbitLine.material as THREE.LineBasicMaterial).opacity = ORBIT_BASE_OPACITY * detail;
   }
 
   setPosition(x: number, y: number, z: number): void {
@@ -93,20 +86,8 @@ export class LocalGroup {
     return [_scratchA.x, _scratchA.y, _scratchA.z];
   }
 
-  midpointWorldPos(): [number, number, number] {
-    this.object.updateWorldMatrix(true, true);
-    this.milkyWay.object.getWorldPosition(_scratchA);
-    this.andromeda.object.getWorldPosition(_scratchB);
-    return [
-      (_scratchA.x + _scratchB.x) / 2,
-      (_scratchA.y + _scratchB.y) / 2,
-      (_scratchA.z + _scratchB.z) / 2,
-    ];
-  }
-
   dispose(): void {
     this.milkyWay.dispose();
-    this.andromeda.dispose();
     this.marker.geometry.dispose();
     (this.marker.material as THREE.Material).dispose();
     this.orbitLine.geometry.dispose();

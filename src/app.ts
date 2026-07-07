@@ -28,8 +28,9 @@ import { scaleInfoFor, GALAXY_MIN_AU } from './edu/scaleInfo';
 import { scaleBarFor } from './edu/scaleBar';
 import { ScaleBar } from './ui/ScaleBar';
 import { LocalGroup } from './galaxy/LocalGroup';
-import { MILKY_WAY, ANDROMEDA } from './galaxy/galaxyParams';
-import { localGroupFade, localGroupOpacities, andromedaFade } from './nav/localGroupFade';
+import { CosmicWeb } from './galaxy/cosmicWeb';
+import { MILKY_WAY } from './galaxy/galaxyParams';
+import { localGroupFade, cosmicWebFade } from './nav/localGroupFade';
 import { PLANET_FACTS, SUN_FACTS, earthClosestApproachAu, formatOrbitalKmH } from './system/solarFacts';
 import { EmitButton } from './ui/EmitButton';
 import { LightBar } from './ui/LightBar';
@@ -81,6 +82,8 @@ export async function startApp(root: HTMLElement): Promise<void> {
   const scalePanel = new ScalePanel(root);
   const scaleBar = new ScaleBar(root);
   const localGroup = new LocalGroup();
+  // 天の川の外に広がる宇宙の大規模構造（銀河団→超銀河団）。半径・銀河数は模式スケール。
+  const cosmicWeb = new CosmicWeb(101, { count: 7000, radiusAu: 5e11, nodeCount: 46 });
 
   // 光速バー（画面上部・地球基準で光の遅さを体感）
   const barStopList = barStops();
@@ -115,6 +118,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
   const field = new StarField(catalog.columns);
   engine.scene.add(field.object);
   engine.scene.add(localGroup.object);
+  engine.scene.add(cosmicWeb.object);
 
   let systemScene: SystemScene | null = null;
   function rebuildSystem(index: number) {
@@ -344,13 +348,18 @@ export async function startApp(root: HTMLElement): Promise<void> {
       engine.renderer.domElement.clientHeight,
       engine.camera.fov * Math.PI / 180,
     ));
-    scaleBar.setVisible(scaleInfo.stage !== 'localgroup');
+    // 銀河団・超銀河団は圧縮した模式スケールなので実縮尺バーは出さない（数値が食い違うため）。
+    scaleBar.setVisible(scaleInfo.stage !== 'cluster' && scaleInfo.stage !== 'supercluster');
     const lgFade = localGroupFade(nav.viewDistanceAu);
+    const webFade = cosmicWebFade(nav.viewDistanceAu);
     localGroup.object.visible = lgFade > 0;
-    const lgOpacities = localGroupOpacities(nav.viewDistanceAu);
-    localGroup.setOpacities(lgOpacities.milkyWay, lgOpacities.andromeda);
+    // 天の川円盤はフェードインして見え続ける。マーカー/公転円は大規模構造が主役になったら消す。
+    localGroup.setOpacity(lgFade, lgFade * (1 - webFade));
     localGroup.setPosition(-nav.focusWorldAu[0], -nav.focusWorldAu[1], -nav.focusWorldAu[2]);
     localGroup.update(animT);
+    cosmicWeb.object.visible = webFade > 0;
+    cosmicWeb.setOpacity(webFade);
+    cosmicWeb.setPosition(-nav.focusWorldAu[0], -nav.focusWorldAu[1], -nav.focusWorldAu[2]);
     field.setOpacity(1 - lgFade);
     field.object.visible = lgFade < 1; // 星野が完全に消える最遠段では描画自体をスキップ
     const labelItems: LabelItem[] = [];
@@ -378,7 +387,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
           labelItems.push({ text: `${p.name}  ${formatAuDistance(p.semiMajorAxisAu)}`, worldPos: [px, py, pz] });
         }
       });
-    } else if (scaleInfo.stage !== 'galaxy' && scaleInfo.stage !== 'localgroup') {
+    } else if (scaleInfo.stage === 'solar' || scaleInfo.stage === 'interstellar') {
       const cols = catalog.columns;
       for (const s of nearestStarsPc(fp, cols, 15)) {
         const px = cols.x[s.index]!, py = cols.y[s.index]!, pz = cols.z[s.index]!;
@@ -391,8 +400,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
       }
     }
     if (lgFade > 0.5) {
-      const andFade = andromedaFade(nav.viewDistanceAu);
-      if (andFade < 0.35) {
+      if (webFade < 0.5) {
         // 天の川が主役。2ラベルは円盤面(y≈0)上で重なるため dyPx で縦分離。
         labelItems.push({ text: '天の川銀河（現在地）', worldPos: localGroup.markerWorldPos(), dyPx: -14 });
         labelItems.push({
@@ -400,19 +408,16 @@ export async function startApp(root: HTMLElement): Promise<void> {
           worldPos: localGroup.galacticCenterWorldPos(),
           dyPx: 14,
         });
-      } else if (andFade <= 0.65) {
-        // クロスフェード中: 2銀河の中点に距離ラベル
-        labelItems.push({ text: '← 約250万光年 → アンドロメダ銀河へ', worldPos: localGroup.midpointWorldPos() });
       } else {
-        // アンドロメダが主役（原点中心＝markerWorldPos が示す画面中央）
-        labelItems.push({ text: 'アンドロメダ銀河（M31）・天の川から約250万光年', worldPos: localGroup.markerWorldPos() });
+        // 大規模構造が主役。我々の天の川がどの点か分かるようマーカーにラベル。
+        labelItems.push({ text: '天の川銀河（ここ）', worldPos: localGroup.markerWorldPos(), dyPx: -12 });
       }
     }
     // スライダーの「対象:」は実際の焦点星（nav.focusStarIndex）を表示する。currentSystem は
     // fade==0 の間は再構築されず古い星名のまま固着するため、それを参照しない。
     slider.setReadout(speedFromSlider(slider.value()), starDisplayName(nav.focusStarIndex, catalog.nameOf(nav.focusStarIndex)));
     // スケールが銀河以遠になったら系ビューの情報パネルは無関係になるので閉じる（残留防止）。
-    if (scaleInfo.stage === 'galaxy' || scaleInfo.stage === 'localgroup') { infoPanel.hide(); planetPanel.hide(); }
+    if (scaleInfo.stage === 'galaxy' || scaleInfo.stage === 'cluster' || scaleInfo.stage === 'supercluster') { infoPanel.hide(); planetPanel.hide(); }
     else if (fade <= 0.5) planetPanel.hide(); // 惑星パネルは系ビュー（fade>0.5）でのみ有効
 
     // --- 天体の直径定規：見えている主天体の中心と実半径（world=AU）を決める ---
@@ -421,13 +426,11 @@ export async function startApp(root: HTMLElement): Promise<void> {
     if (fade > 0.5 && systemScene && currentSystem.starIndex === 0) {
       const outerAu = Math.max(...currentSystem.planets.map((p) => p.semiMajorAxisAu)); // 海王星軌道
       rulerInfo = { center: systemScene.sunWorldPos(), radiusWorld: outerAu, label: '太陽系 ・ 直径 約90億km（光で約8時間）' };
-    } else if (lgFade > 0.5) {
+    } else if (lgFade > 0.5 && webFade < 0.5) {
+      // 天の川が主役の間だけ直径定規（大規模構造は圧縮した模式スケールなので出さない）。
       // ラベルの直径は radiusAu から導く（線の実長とラベル数値を必ず一致させる）。
       const mwWanLy = Math.round((2 * MILKY_WAY.radiusAu) / AU_PER_LY / 1e4);
-      const andWanLy = Math.round((2 * ANDROMEDA.radiusAu) / AU_PER_LY / 1e4);
-      rulerInfo = andromedaFade(nav.viewDistanceAu) < 0.5
-        ? { center: localGroup.galacticCenterWorldPos(), radiusWorld: MILKY_WAY.radiusAu, label: `天の川銀河 ・ 直径 約${mwWanLy}万光年` }
-        : { center: localGroup.markerWorldPos(), radiusWorld: ANDROMEDA.radiusAu, label: `アンドロメダ銀河 ・ 直径 約${andWanLy}万光年` };
+      rulerInfo = { center: localGroup.galacticCenterWorldPos(), radiusWorld: MILKY_WAY.radiusAu, label: `天の川銀河 ・ 直径 約${mwWanLy}万光年` };
     }
 
     // --- 光速バー（地球から放った光が惑星へ届く様子で光の遅さを体感） -------

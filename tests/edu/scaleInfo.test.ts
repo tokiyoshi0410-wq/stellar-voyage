@@ -49,18 +49,27 @@ describe('scaleInfoFor', () => {
   });
 });
 
-describe('scaleInfoFor local group', () => {
-  it('is galaxy below the localgroup boundary and localgroup above it, mentioning Andromeda', () => {
-    expect(scaleInfoFor(5e9).stage).toBe('galaxy');
-    const info = scaleInfoFor(1e10);
-    expect(info.stage).toBe('localgroup');
-    expect(info.title).toBe('局部銀河群');
-    expect(info.lines.join(' ')).toMatch(/250万光年/);
+describe('scaleInfoFor large-scale structure', () => {
+  it('progresses galaxy → cluster → supercluster as you zoom out', () => {
+    expect(scaleInfoFor(1e10).stage).toBe('galaxy');       // まだ天の川ひとつ
+    const cluster = scaleInfoFor(5e10);
+    expect(cluster.stage).toBe('cluster');
+    expect(cluster.title).toBe('銀河団');
+    expect(cluster.lines.join(' ')).toMatch(/銀河/);
+    const superc = scaleInfoFor(2e11);
+    expect(superc.stage).toBe('supercluster');
+    expect(superc.title).toBe('超銀河団');
   });
-  // 局部銀河群の概念ラベル(app.ts の lgFade>0.5)と縮尺バー非表示(stage==='localgroup')が
-  // 同じ視距離で切り替わるよう、localgroup 境界を localGroupFade の中点(=(3e9+1e10)/2=6.5e9)に合わせる。
-  it('enters localgroup exactly at the localGroupFade midpoint (6.5e9)', () => {
-    expect(scaleInfoFor(6.5e9).stage).toBe('localgroup');
-    expect(scaleInfoFor(6.5e9 - 1).stage).toBe('galaxy');
+  it('has clean stage boundaries at CLUSTER_MIN (3e10) and SUPERCLUSTER_MIN (1.5e11)', () => {
+    expect(scaleInfoFor(3e10 - 1).stage).toBe('galaxy');
+    expect(scaleInfoFor(3e10).stage).toBe('cluster');
+    expect(scaleInfoFor(1.5e11 - 1).stage).toBe('cluster');
+    expect(scaleInfoFor(1.5e11).stage).toBe('supercluster');
+  });
+  it('no longer mentions Andromeda anywhere', () => {
+    for (const v of [1e10, 5e10, 2e11]) {
+      expect(scaleInfoFor(v).lines.join(' ')).not.toMatch(/アンドロメダ/);
+      expect(scaleInfoFor(v).title).not.toMatch(/アンドロメダ|局部銀河群/);
+    }
   });
 });
