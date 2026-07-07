@@ -1,14 +1,26 @@
 # stellar-voyage セッション引き継ぎ
 
 > **次セッションはまずこのファイルを読むこと。** 詳細な進捗の一次ソースは
-> `.superpowers/sdd/progress.md`（SDD ledger）。矛盾したら ledger と `git log` を信じる。
+> `.superpowers/sdd/progress.md`（SDD ledger・**git 追跡外＝ローカルのみ**。公開時に履歴からも除去した）。
+> 矛盾したら ledger と `git log` を信じる。
+
+## 🚀 公開済み（2026-07-08）
+
+user「orbit-tracker と同じように公開したい・後から修正しても反映されるなら先に公開して」→ **GitHub public + Cloudflare Pages で公開済み**。
+
+- **ライブ URL: https://stellar-voyage.pages.dev** ／ **repo: https://github.com/tokiyoshi0410-wq/stellar-voyage**（public, `tokiyoshi0410-wq`）
+- **リモート `origin` 設定済み・main push 済み**（旧「未 push」状態は解消）。以後の修正は commit→push→**再デプロイ**で反映。
+- **公開時の整理**: ① `public/data/*`(hyg.bin 等 ~700KB)を追跡化＝リポジトリ自己完結＋CF ビルド可（元CSV 33MB は gitignore のまま）。② MIT LICENSE 追加。③ **SDD 台帳 `.superpowers/` を追跡・履歴から除去**（`git filter-branch`。ローカルには残す）。④ favicon 追加。この整理で `c3626f8` 以降のコミット SHA は**書き換わっている**（filter-branch のため。旧 handoff/ledger 内の 6ff9d3d 等の SHA は無効。`git log` を信じる）。
+- **⚠ デプロイ方式の注意**: 現在は **wrangler 直アップロード**（`wrangler pages deploy dist --project-name stellar-voyage`）で公開＝**git push だけでは自動デプロイされない**。orbit-tracker（Git Provider: Yes）と違い現状 direct-upload。修正時はビルドして `wrangler pages deploy dist` を叩くこと。**push→自動デプロイにしたい場合**は CF ダッシュボードで GitHub 連携プロジェクトを作り直す（別プロジェクト扱い）か、GitHub Action + CF API トークンを組む（未実施・user 判断待ち）。
+- **未実施フォローアップ**: link-hub（https://tokiyoshi0410-wq.github.io/links/ ）へのリンク追加は user 承認済み意図だが未実施。auto-deploy の恒久化も未。
+- CF アカウント: `tokiyoshi.0410@gmail.com`（Account ID `e15b20153e9ff1aaa75b3c88570fe21a`）。wrangler ログイン済み。
 
 ## ✅ 直近完了 — サイト総合レビュー＆実バグ修正バッチ（2026-07-07）
 
 user「サイト全体を総合レビューしてバグや改善点を」→ 5系統並列レビュー＋一次ソース裏取り＋Playwright
 実機検証で、検証済み実バグ13件＋スペクトル分類＋改善を1バッチ修正。詳細は `progress.md`「Review & Fix Batch」節。
 
-- **現 HEAD: `55b75a4`（このdoc更新で+1）。範囲 `c3626f8..55b75a4` = 3e5ba44 バグ修正 / 554dba1 技術的負債整理 / 6ff9d3d docs / 55b75a4 定数一本化（回帰監査の指摘）。全 main・未 push。**
+- **コミット（公開の filter-branch 前の SHA 表記・現在は書き換わっている点に注意）: 3e5ba44 バグ修正 / 554dba1 技術的負債整理 / docs / 定数一本化。公開時に history 書き換え済み。最新は `git log` 参照。**
 - **回帰監査（regression-auditor + 自分の裏取り）**: 高リスク回帰ゼロ。唯一の注意点だった「spectral 境界変更→planetGen.planetCount の決定論生成」は、影響する2温度帯(10000-10380K B→A / 6000-6050K F→G)とも base が増える方向のみで、`floor(r·5)≥floor(r·3)` より既存の生成惑星は不変・追加のみ（superset）＝クラッシュ/空系化なし・むしろ分類に整合、と logic で確認。GALAXY_MIN_AU 二重定義は 55b75a4 で解消。formatDistanceLy は孤立(テストのみ・無害)。
 - **重要バグ（修正済）**: ①恒星間/銀河で最近傍(焦点)星が星野から消えラベルだけ浮く→fade==0で隠さない
   ②実在系外惑星の約1/4(a<0.3AU)が恒星球に埋もれ不可視＋クリック横取り→恒星半径を最内惑星より小さく
