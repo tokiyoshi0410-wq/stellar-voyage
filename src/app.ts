@@ -24,7 +24,7 @@ import { LabelLayer, type LabelItem } from './ui/LabelLayer';
 import { nearestStarsPc } from './nav/nearestStars';
 import { PARSEC_IN_LY } from './astro/spectral';
 import { ScalePanel } from './ui/ScalePanel';
-import { scaleInfoFor } from './edu/scaleInfo';
+import { scaleInfoFor, GALAXY_MIN_AU } from './edu/scaleInfo';
 import { scaleBarFor } from './edu/scaleBar';
 import { ScaleBar } from './ui/ScaleBar';
 import { LocalGroup } from './galaxy/LocalGroup';
@@ -43,7 +43,6 @@ const PICK_ANGLE = 0.02;
 const PLANET_PICK_ANGLE = 0.05;
 const SUN_PICK_ANGLE = 0.06; // 太陽(原点)クリック判定の角度（live-tune）
 const FOCUS_HYSTERESIS = 0.9; // 新しい最近傍星へ切り替える距離マージン（境界での往復防止）
-const GALAXY_STAGE_MIN_AU = 1e6; // これ以上のズームでは星ラベル/焦点切替が無い（scaleInfo の galaxy 下限）
 const AU_PER_LY = 63241.077; // 直径定規ラベルを radiusAu から導くための換算
 
 function sunGalacticText(): string {
@@ -283,7 +282,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
     const fade = systemFade(nav.viewDistanceAu);
     // 焦点星の切替は星が見える範囲（銀河ステージ未満）でのみ行う。銀河・局部銀河群スケールでは
     // per-star 情報が無く、全カタログ O(n) の最近傍走査を毎フレーム回すのは無駄。
-    if (nav.viewDistanceAu < GALAXY_STAGE_MIN_AU) {
+    if (nav.viewDistanceAu < GALAXY_MIN_AU) {
       const near = nearestStarPc(fp, catalog.columns);
       if (near.index !== nav.focusStarIndex) {
         const fi = nav.focusStarIndex;

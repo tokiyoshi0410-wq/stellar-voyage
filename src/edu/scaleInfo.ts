@@ -3,7 +3,7 @@ import { AU_IN_OKUKM } from '../ui/format';
 const LIGHT_MIN_PER_AU = 8.317;   // 1 AU を光が進む時間（分）
 const NEPTUNE_ORBIT_AU = 30.1;    // 海王星の軌道長半径（solarSystem.ts と一致）
 const SOLAR_MAX_AU = 30000;       // 太陽系ステージの上限（フェード帯の上端）
-const GALAXY_MIN_AU = 1_000_000;  // 銀河ステージの下限
+export const GALAXY_MIN_AU = 1_000_000;  // 銀河ステージの下限
 // 局部銀河群ステージの下限。localGroupFade の中点(=(3e9+1e10)/2=6.5e9, lgFade=0.5 の点)に
 // 一致させ、概念ラベル(app.ts の lgFade>0.5)と縮尺バー非表示(stage==='localgroup')を同時化する
 // （両者がズレると「約250万光年」概念ラベルと実スケール縮尺バーが同時表示され矛盾する）。
