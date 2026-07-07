@@ -9,6 +9,7 @@
 user「orbit-tracker と同じように公開したい・後から修正しても反映されるなら先に公開して」→ **GitHub public + Cloudflare Pages で公開済み**。
 
 - **ライブ URL: https://stellar-voyage.pages.dev** ／ **repo: https://github.com/tokiyoshi0410-wq/stellar-voyage**（public, `tokiyoshi0410-wq`）
+- **公開後追加（2026-07-08, commit d2b5cd2・再デプロイ済み）**: スマホの**二本指ピンチズーム**対応。`src/nav/pinch.ts`(TDD) + InputMapper を pointerId 位置追跡に作り替え（一本指ドラッグを movementX/Y 依存→位置差分にしてタッチでも視点回転が効くよう堅牢化、二本指はピンチ専念、複数指ジェスチャ中はタップ選択抑制、setPointerCapture を try/catch 保護）。ControlHints はタッチ端末で「1本指ドラッグ/2本指ピンチ/タップ」表示に。214テスト緑、本番でピンチ 5AU→2AU 動作・console 0 確認。→ 「ピンチズーム未対応」の deferred は解消。
 - **リモート `origin` 設定済み・main push 済み**（旧「未 push」状態は解消）。以後の修正は commit→push→**再デプロイ**で反映。
 - **公開時の整理**: ① `public/data/*`(hyg.bin 等 ~700KB)を追跡化＝リポジトリ自己完結＋CF ビルド可（元CSV 33MB は gitignore のまま）。② MIT LICENSE 追加。③ **SDD 台帳 `.superpowers/` を追跡・履歴から除去**（`git filter-branch`。ローカルには残す）。④ favicon 追加。この整理で `c3626f8` 以降のコミット SHA は**書き換わっている**（filter-branch のため。旧 handoff/ledger 内の 6ff9d3d 等の SHA は無効。`git log` を信じる）。
 - **⚠ デプロイ方式の注意**: 現在は **wrangler 直アップロード**（`wrangler pages deploy dist --project-name stellar-voyage`）で公開＝**git push だけでは自動デプロイされない**。orbit-tracker（Git Provider: Yes）と違い現状 direct-upload。修正時はビルドして `wrangler pages deploy dist` を叩くこと。**push→自動デプロイにしたい場合**は CF ダッシュボードで GitHub 連携プロジェクトを作り直す（別プロジェクト扱い）か、GitHub Action + CF API トークンを組む（未実施・user 判断待ち）。
