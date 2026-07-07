@@ -29,8 +29,9 @@ import { scaleBarFor } from './edu/scaleBar';
 import { ScaleBar } from './ui/ScaleBar';
 import { LocalGroup } from './galaxy/LocalGroup';
 import { CosmicWeb } from './galaxy/cosmicWeb';
+import { UniverseHorizon } from './galaxy/universeHorizon';
 import { MILKY_WAY } from './galaxy/galaxyParams';
-import { localGroupFade, cosmicWebFade } from './nav/localGroupFade';
+import { localGroupFade, cosmicWebFade, universeFade } from './nav/localGroupFade';
 import { PLANET_FACTS, SUN_FACTS, earthClosestApproachAu, formatOrbitalKmH } from './system/solarFacts';
 import { EmitButton } from './ui/EmitButton';
 import { LightBar } from './ui/LightBar';
@@ -84,6 +85,8 @@ export async function startApp(root: HTMLElement): Promise<void> {
   const localGroup = new LocalGroup();
   // 天の川の外に広がる宇宙の大規模構造（銀河団→超銀河団）。半径・銀河数は模式スケール。
   const cosmicWeb = new CosmicWeb(101, { count: 7000, radiusAu: 5e11, nodeCount: 46 });
+  // 観測可能な宇宙の地平線（CMB 風の球殻）。大規模構造を包むズームアウトの終着点。
+  const universeHorizon = new UniverseHorizon(202, { count: 5000, radiusAu: 3e12, thicknessAu: 3e11 });
 
   // 光速バー（画面上部・地球基準で光の遅さを体感）
   const barStopList = barStops();
@@ -119,6 +122,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
   engine.scene.add(field.object);
   engine.scene.add(localGroup.object);
   engine.scene.add(cosmicWeb.object);
+  engine.scene.add(universeHorizon.object);
 
   let systemScene: SystemScene | null = null;
   function rebuildSystem(index: number) {
@@ -348,10 +352,11 @@ export async function startApp(root: HTMLElement): Promise<void> {
       engine.renderer.domElement.clientHeight,
       engine.camera.fov * Math.PI / 180,
     ));
-    // 銀河団・超銀河団は圧縮した模式スケールなので実縮尺バーは出さない（数値が食い違うため）。
-    scaleBar.setVisible(scaleInfo.stage !== 'cluster' && scaleInfo.stage !== 'supercluster');
+    // 銀河団以遠は圧縮した模式スケールなので実縮尺バーは出さない（数値が食い違うため）。
+    scaleBar.setVisible(scaleInfo.stage === 'solar' || scaleInfo.stage === 'interstellar' || scaleInfo.stage === 'galaxy');
     const lgFade = localGroupFade(nav.viewDistanceAu);
     const webFade = cosmicWebFade(nav.viewDistanceAu);
+    const uniFade = universeFade(nav.viewDistanceAu);
     localGroup.object.visible = lgFade > 0;
     // 天の川円盤はフェードインして見え続ける。マーカー/公転円は大規模構造が主役になったら消す。
     localGroup.setOpacity(lgFade, lgFade * (1 - webFade));
@@ -360,6 +365,9 @@ export async function startApp(root: HTMLElement): Promise<void> {
     cosmicWeb.object.visible = webFade > 0;
     cosmicWeb.setOpacity(webFade);
     cosmicWeb.setPosition(-nav.focusWorldAu[0], -nav.focusWorldAu[1], -nav.focusWorldAu[2]);
+    universeHorizon.object.visible = uniFade > 0;
+    universeHorizon.setOpacity(uniFade * 0.7); // 地平線は薄く儚く
+    universeHorizon.setPosition(-nav.focusWorldAu[0], -nav.focusWorldAu[1], -nav.focusWorldAu[2]);
     field.setOpacity(1 - lgFade);
     field.object.visible = lgFade < 1; // 星野が完全に消える最遠段では描画自体をスキップ
     const labelItems: LabelItem[] = [];
@@ -417,7 +425,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
     // fade==0 の間は再構築されず古い星名のまま固着するため、それを参照しない。
     slider.setReadout(speedFromSlider(slider.value()), starDisplayName(nav.focusStarIndex, catalog.nameOf(nav.focusStarIndex)));
     // スケールが銀河以遠になったら系ビューの情報パネルは無関係になるので閉じる（残留防止）。
-    if (scaleInfo.stage === 'galaxy' || scaleInfo.stage === 'cluster' || scaleInfo.stage === 'supercluster') { infoPanel.hide(); planetPanel.hide(); }
+    if (scaleInfo.stage === 'galaxy' || scaleInfo.stage === 'cluster' || scaleInfo.stage === 'supercluster' || scaleInfo.stage === 'universe') { infoPanel.hide(); planetPanel.hide(); }
     else if (fade <= 0.5) planetPanel.hide(); // 惑星パネルは系ビュー（fade>0.5）でのみ有効
 
     // --- 天体の直径定規：見えている主天体の中心と実半径（world=AU）を決める ---

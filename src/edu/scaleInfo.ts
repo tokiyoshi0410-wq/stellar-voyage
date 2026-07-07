@@ -8,6 +8,8 @@ export const GALAXY_MIN_AU = 1_000_000;  // 銀河ステージの下限
 export const CLUSTER_MIN_AU = 3e10;
 // 超銀河団ステージの下限。多数の銀河団が網目状につながって見えてくる点。
 export const SUPERCLUSTER_MIN_AU = 1.5e11;
+// 観測可能な宇宙ステージの下限。大規模構造を宇宙の地平線（CMB 球殻）が包む終着点。
+export const UNIVERSE_MIN_AU = 1.5e12;
 
 export function formatLightTime(lightMinutes: number): string {
   // 総秒数から算出して単位境界の桁上がりを正しく扱う（0.999分→"1分" 等）。
@@ -27,12 +29,23 @@ export function formatLightTime(lightMinutes: number): string {
 }
 
 export interface ScaleInfo {
-  stage: 'solar' | 'interstellar' | 'galaxy' | 'cluster' | 'supercluster';
+  stage: 'solar' | 'interstellar' | 'galaxy' | 'cluster' | 'supercluster' | 'universe';
   title: string;
   lines: string[];
 }
 
 export function scaleInfoFor(viewDistanceAu: number): ScaleInfo {
+  if (viewDistanceAu >= UNIVERSE_MIN_AU) {
+    return {
+      stage: 'universe',
+      title: '観測可能な宇宙',
+      lines: [
+        '見わたせる かぎりの 宇宙ぜんぶ',
+        '端から端 約930億光年',
+        'これより遠くは 光が届かない（宇宙の地平線）',
+      ],
+    };
+  }
   if (viewDistanceAu >= SUPERCLUSTER_MIN_AU) {
     return {
       stage: 'supercluster',

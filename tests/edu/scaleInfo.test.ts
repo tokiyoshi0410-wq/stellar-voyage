@@ -50,7 +50,7 @@ describe('scaleInfoFor', () => {
 });
 
 describe('scaleInfoFor large-scale structure', () => {
-  it('progresses galaxy → cluster → supercluster as you zoom out', () => {
+  it('progresses galaxy → cluster → supercluster → universe as you zoom out', () => {
     expect(scaleInfoFor(1e10).stage).toBe('galaxy');       // まだ天の川ひとつ
     const cluster = scaleInfoFor(5e10);
     expect(cluster.stage).toBe('cluster');
@@ -59,12 +59,18 @@ describe('scaleInfoFor large-scale structure', () => {
     const superc = scaleInfoFor(2e11);
     expect(superc.stage).toBe('supercluster');
     expect(superc.title).toBe('超銀河団');
+    const universe = scaleInfoFor(3e12);
+    expect(universe.stage).toBe('universe');
+    expect(universe.title).toBe('観測可能な宇宙');
+    expect(universe.lines.join(' ')).toMatch(/930億光年/);
   });
-  it('has clean stage boundaries at CLUSTER_MIN (3e10) and SUPERCLUSTER_MIN (1.5e11)', () => {
+  it('has clean stage boundaries at CLUSTER (3e10), SUPERCLUSTER (1.5e11), UNIVERSE (1.5e12)', () => {
     expect(scaleInfoFor(3e10 - 1).stage).toBe('galaxy');
     expect(scaleInfoFor(3e10).stage).toBe('cluster');
     expect(scaleInfoFor(1.5e11 - 1).stage).toBe('cluster');
     expect(scaleInfoFor(1.5e11).stage).toBe('supercluster');
+    expect(scaleInfoFor(1.5e12 - 1).stage).toBe('supercluster');
+    expect(scaleInfoFor(1.5e12).stage).toBe('universe');
   });
   it('no longer mentions Andromeda anywhere', () => {
     for (const v of [1e10, 5e10, 2e11]) {

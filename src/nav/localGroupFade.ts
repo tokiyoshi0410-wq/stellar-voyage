@@ -24,3 +24,14 @@ export function cosmicWebFade(viewDistanceAu: number): number {
     0, 1,
   ));
 }
+
+// 大規模構造を包む「観測可能な宇宙の地平線」(CMB 球殻)のフェードイン。ズームアウトの終着点。
+export const UNIVERSE_FADE_START_AU = 8e11;
+export const UNIVERSE_FADE_END_AU = 3e12;
+
+export function universeFade(viewDistanceAu: number): number {
+  return smoothstep(clamp(
+    (viewDistanceAu - UNIVERSE_FADE_START_AU) / (UNIVERSE_FADE_END_AU - UNIVERSE_FADE_START_AU),
+    0, 1,
+  ));
+}

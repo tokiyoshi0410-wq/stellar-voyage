@@ -1,6 +1,6 @@
 export const MIN_VIEW_AU = 0.05;
-// 銀河団→超銀河団（宇宙の大規模構造）まで引けるよう上限を拡張。
-export const MAX_VIEW_AU = 1e12;
+// 銀河団→超銀河団→観測可能な宇宙（地平線）まで引けるよう上限を拡張。
+export const MAX_VIEW_AU = 6e12;
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
