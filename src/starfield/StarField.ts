@@ -55,7 +55,11 @@ export class StarField {
   }
 
   setFocus(focusPc: [number, number, number], focusIndex: number): void {
+    // uFocusPc はカメラ相対描画に毎フレーム必要なので常に更新する。
     (this.material.uniforms.uFocusPc!.value as THREE.Vector3).set(focusPc[0], focusPc[1], focusPc[2]);
+    // サイズ属性の書き換え（＝GPU 再アップロード）は focus 星が変わった時だけ。毎フレーム同じ
+    // index で呼ばれても全カタログ分の size 配列を再送しない。focusIndex -1 は「隠さない」。
+    if (focusIndex === this.focusIndex) return;
     const attr = this.object.geometry.getAttribute('size') as THREE.BufferAttribute;
     const arr = attr.array as Float32Array;
     if (this.focusIndex >= 0) arr[this.focusIndex] = this.savedSize; // restore previous

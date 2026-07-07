@@ -29,6 +29,11 @@ describe('formatPulseTime', () => {
     const hundredThousandYrMin = 100000 * 365 * 24 * 60;
     expect(formatPulseTime(hundredThousandYrMin)).toBe('約10万年');
   });
+  it('formats 100〜9999 年 without exponential notation', () => {
+    const minFor250yr = 250 * 365 * 24 * 60; // 旧: formatLightTime 経由で "約2.5e+2年"
+    expect(formatPulseTime(minFor250yr)).toBe('約250年');
+    expect(formatPulseTime(minFor250yr)).not.toMatch(/e\+/);
+  });
 });
 
 describe('pulseReached', () => {

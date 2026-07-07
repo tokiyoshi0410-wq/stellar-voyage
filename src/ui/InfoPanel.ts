@@ -1,4 +1,5 @@
 import type { StarInfo } from './format';
+import { formatLuminosity, formatLy } from './format';
 
 export class InfoPanel {
   private readonly el: HTMLDivElement;
@@ -12,23 +13,29 @@ export class InfoPanel {
     root.appendChild(this.el);
   }
 
-  show(info: StarInfo, onEnterSystem?: () => void): void {
-    const real = info.isReal ? '<span style="color:#7fd1ff">実在</span>' : '生成';
-    this.el.innerHTML =
-      `<div style="font-size:16px;font-weight:600;margin-bottom:6px">${info.title} ${real}</div>` +
-      `スペクトル型: ${info.spectralClass}<br>` +
-      `表面温度: ${info.temperatureK.toLocaleString('ja-JP')} K<br>` +
-      `光度: 太陽の ${info.luminositySun.toPrecision(3)} 倍<br>` +
-      `距離: ${Math.round(info.distanceLy).toLocaleString('ja-JP')} 光年`;
+  show(info: StarInfo): void {
+    // カタログ名（外部由来文字列）は textContent で挿入し、innerHTML の注入を避ける。
+    this.el.replaceChildren();
+
+    const head = document.createElement('div');
+    head.style.cssText = 'font-size:16px;font-weight:600;margin-bottom:6px';
+    head.append(document.createTextNode(`${info.title} `));
+    const badge = document.createElement('span');
+    badge.style.color = info.isReal ? '#7fd1ff' : '#9fb0c8';
+    badge.textContent = info.isReal ? '実在' : '生成';
+    head.appendChild(badge);
+    this.el.appendChild(head);
+
+    const body = document.createElement('div');
+    body.textContent =
+      `スペクトル型: ${info.spectralClass}\n` +
+      `表面温度: ${info.temperatureK.toLocaleString('ja-JP')} K\n` +
+      `光度: 太陽の ${formatLuminosity(info.luminositySun)} 倍\n` +
+      `距離: ${formatLy(info.distanceLy)}`;
+    body.style.whiteSpace = 'pre';
+    this.el.appendChild(body);
+
     this.el.style.display = 'block';
-    if (onEnterSystem) {
-      const btn = document.createElement('button');
-      btn.textContent = 'この星系へ';
-      btn.style.cssText = 'margin-top:10px;width:100%;padding:6px;cursor:pointer;' +
-        'background:#1c3a63;color:#eaf2ff;border:1px solid #3a6ea5;border-radius:6px;font:13px system-ui;';
-      btn.onclick = onEnterSystem;
-      this.el.appendChild(btn);
-    }
   }
 
   hide(): void {

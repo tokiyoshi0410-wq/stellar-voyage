@@ -13,6 +13,9 @@ const SUN_DISK_OFFSET = MILKY_WAY.radiusAu * 0.55;
 // 天の川の面内自転速度 rad/秒（実機調整）
 const GALAXY_SPIN_SPEED = 0.1;
 
+// 太陽の銀河公転軌道円の基準不透明度（天の川の可視度に比例して掛ける）
+const ORBIT_BASE_OPACITY = 0.5;
+
 export class LocalGroup {
   readonly object: THREE.Group;
   private readonly milkyWay: GalaxyDisk;
@@ -55,7 +58,7 @@ export class LocalGroup {
     }
     this.orbitLine = new THREE.Line(
       new THREE.BufferGeometry().setFromPoints(orbitPts),
-      new THREE.LineBasicMaterial({ color: 0xffd479, transparent: true, opacity: 0.5 }),
+      new THREE.LineBasicMaterial({ color: 0xffd479, transparent: true, opacity: ORBIT_BASE_OPACITY }),
     );
     this.orbitLine.position.set(-SUN_DISK_OFFSET, 0, 0);
     this.orbitLine.rotation.x = 0.5;
@@ -66,7 +69,8 @@ export class LocalGroup {
     this.milkyWay.setOpacity(milkyWay);
     this.andromeda.setOpacity(andromeda);
     (this.marker.material as THREE.MeshBasicMaterial).opacity = milkyWay;
-    (this.orbitLine.material as THREE.LineBasicMaterial).opacity = milkyWay;
+    // 公転円は基準 0.5 の半透明を保つ（milkyWay で直に上書きすると常に最大不透明になっていた）
+    (this.orbitLine.material as THREE.LineBasicMaterial).opacity = ORBIT_BASE_OPACITY * milkyWay;
   }
 
   setPosition(x: number, y: number, z: number): void {

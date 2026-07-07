@@ -43,6 +43,8 @@ const PICK_ANGLE = 0.02;
 const PLANET_PICK_ANGLE = 0.05;
 const SUN_PICK_ANGLE = 0.06; // 太陽(原点)クリック判定の角度（live-tune）
 const FOCUS_HYSTERESIS = 0.9; // 新しい最近傍星へ切り替える距離マージン（境界での往復防止）
+const GALAXY_STAGE_MIN_AU = 1e6; // これ以上のズームでは星ラベル/焦点切替が無い（scaleInfo の galaxy 下限）
+const AU_PER_LY = 63241.077; // 直径定規ラベルを radiusAu から導くための換算
 
 function sunGalacticText(): string {
   return `太陽\n銀河公転: ${SUN_FACTS.galacticSpeedKmS} km/s（銀河を約${(SUN_FACTS.galacticPeriodYr / 1e8).toPrecision(2)}億年で1周）\n` +
@@ -214,9 +216,10 @@ export async function startApp(root: HTMLElement): Promise<void> {
       }
     }
 
-    // 局部銀河群スケールでは星野が概念表示（不可視）。見えていない点は渦巻き銀河のパーティクル
-    // であってカタログ星ではないため、カタログ星のピックを行わない（見えない星の選択を防ぐ）。
-    if (scaleInfoFor(nav.viewDistanceAu).stage === 'localgroup') {
+    // 星野が完全に消える最遠段（localGroupFade>=1）だけカタログ星のピックを止める。見えている点は
+    // 渦巻き銀河のパーティクルでカタログ星ではないため。6.5e9〜1e10 では星が半分見えておりクリック可
+    // にする（旧: stage==='localgroup' で 6.5e9 から遮断し、見えている星が押せなかった）。
+    if (localGroupFade(nav.viewDistanceAu) >= 1) {
       infoPanel.hide();
       planetPanel.hide();
       return;
@@ -278,20 +281,27 @@ export async function startApp(root: HTMLElement): Promise<void> {
     ];
     field.object.position.set(0, 0, 0);
     const fade = systemFade(nav.viewDistanceAu);
-    const near = nearestStarPc(fp, catalog.columns);
-    if (near.index !== nav.focusStarIndex) {
-      const fi = nav.focusStarIndex;
-      const curDist = Math.hypot(
-        catalog.columns.x[fi]! - fp[0], catalog.columns.y[fi]! - fp[1], catalog.columns.z[fi]! - fp[2],
-      );
-      // 星系境界での往復切替を防ぐヒステリシス
-      if (near.distPc < curDist * FOCUS_HYSTERESIS) nav.focusStarIndex = near.index;
+    // 焦点星の切替は星が見える範囲（銀河ステージ未満）でのみ行う。銀河・局部銀河群スケールでは
+    // per-star 情報が無く、全カタログ O(n) の最近傍走査を毎フレーム回すのは無駄。
+    if (nav.viewDistanceAu < GALAXY_STAGE_MIN_AU) {
+      const near = nearestStarPc(fp, catalog.columns);
+      if (near.index !== nav.focusStarIndex) {
+        const fi = nav.focusStarIndex;
+        const curDist = Math.hypot(
+          catalog.columns.x[fi]! - fp[0], catalog.columns.y[fi]! - fp[1], catalog.columns.z[fi]! - fp[2],
+        );
+        // 星系境界での往復切替を防ぐヒステリシス
+        if (near.distPc < curDist * FOCUS_HYSTERESIS) nav.focusStarIndex = near.index;
+      }
     }
     // 可視かつ古いときだけ系を再構築（フェード中=不可視での毎フレーム再構築を回避）
     if (fade > 0 && currentSystem.starIndex !== nav.focusStarIndex) {
       currentSystem = rebuildSystem(nav.focusStarIndex);
     }
-    field.setFocus(fp, nav.focusStarIndex);
+    // 系ビューが見えている時だけ焦点星を星野から隠す（系ビューの中心星と二重表示にしないため）。
+    // fade==0（恒星間・銀河）では系ビューが非表示なので、隠したままだと最近傍星だけが星野から
+    // 消えてラベルだけ浮く。-1 を渡して復活させる。
+    field.setFocus(fp, fade > 0 ? nav.focusStarIndex : -1);
 
     // --- フェード（ズームアウトで恒星系→星野へ） ----------------------------
     if (systemScene) {
@@ -300,8 +310,11 @@ export async function startApp(root: HTMLElement): Promise<void> {
         const mat = (o as THREE.Mesh).material;
         if (!mat) return;
         for (const m of Array.isArray(mat) ? mat : [mat]) {
+          // 各マテリアルの基準不透明度（軌道リング 0.85 / 惑星の環 0.7 等）に fade を掛ける。
+          // m.opacity=fade で上書きすると、これらの調整値が毎フレーム潰れて常に不透明になる。
+          const base = (m.userData.baseOpacity ??= m.opacity);
           m.transparent = true;
-          m.opacity = fade;
+          m.opacity = base * fade;
         }
       });
       systemScene.root.visible = fade > 0;
@@ -323,6 +336,7 @@ export async function startApp(root: HTMLElement): Promise<void> {
     localGroup.setPosition(-nav.focusWorldAu[0], -nav.focusWorldAu[1], -nav.focusWorldAu[2]);
     localGroup.update(animT);
     field.setOpacity(1 - lgFade);
+    field.object.visible = lgFade < 1; // 星野が完全に消える最遠段では描画自体をスキップ
     const labelItems: LabelItem[] = [];
     if (fade > 0.5 && systemScene) {
       const ss = systemScene;
@@ -378,7 +392,12 @@ export async function startApp(root: HTMLElement): Promise<void> {
         labelItems.push({ text: 'アンドロメダ銀河（M31）・天の川から約250万光年', worldPos: localGroup.markerWorldPos() });
       }
     }
-    slider.setReadout(speedFromSlider(slider.value()), starDisplayName(currentSystem.starIndex, currentSystem.starName));
+    // スライダーの「対象:」は実際の焦点星（nav.focusStarIndex）を表示する。currentSystem は
+    // fade==0 の間は再構築されず古い星名のまま固着するため、それを参照しない。
+    slider.setReadout(speedFromSlider(slider.value()), starDisplayName(nav.focusStarIndex, catalog.nameOf(nav.focusStarIndex)));
+    // スケールが銀河以遠になったら系ビューの情報パネルは無関係になるので閉じる（残留防止）。
+    if (scaleInfo.stage === 'galaxy' || scaleInfo.stage === 'localgroup') { infoPanel.hide(); planetPanel.hide(); }
+    else if (fade <= 0.5) planetPanel.hide(); // 惑星パネルは系ビュー（fade>0.5）でのみ有効
 
     // --- 天体の直径定規：見えている主天体の中心と実半径（world=AU）を決める ---
     // （投影は engine.render() 後に objectScreenExtent で行う）
@@ -387,9 +406,12 @@ export async function startApp(root: HTMLElement): Promise<void> {
       const outerAu = Math.max(...currentSystem.planets.map((p) => p.semiMajorAxisAu)); // 海王星軌道
       rulerInfo = { center: systemScene.sunWorldPos(), radiusWorld: outerAu, label: '太陽系 ・ 直径 約90億km（光で約8時間）' };
     } else if (lgFade > 0.5) {
+      // ラベルの直径は radiusAu から導く（線の実長とラベル数値を必ず一致させる）。
+      const mwWanLy = Math.round((2 * MILKY_WAY.radiusAu) / AU_PER_LY / 1e4);
+      const andWanLy = Math.round((2 * ANDROMEDA.radiusAu) / AU_PER_LY / 1e4);
       rulerInfo = andromedaFade(nav.viewDistanceAu) < 0.5
-        ? { center: localGroup.galacticCenterWorldPos(), radiusWorld: MILKY_WAY.radiusAu, label: '天の川銀河 ・ 直径 約10万光年' }
-        : { center: localGroup.markerWorldPos(), radiusWorld: ANDROMEDA.radiusAu, label: 'アンドロメダ銀河 ・ 直径 約20万光年' };
+        ? { center: localGroup.galacticCenterWorldPos(), radiusWorld: MILKY_WAY.radiusAu, label: `天の川銀河 ・ 直径 約${mwWanLy}万光年` }
+        : { center: localGroup.markerWorldPos(), radiusWorld: ANDROMEDA.radiusAu, label: `アンドロメダ銀河 ・ 直径 約${andWanLy}万光年` };
     }
 
     // --- 光速バー（地球から放った光が惑星へ届く様子で光の遅さを体感） -------
@@ -412,7 +434,10 @@ export async function startApp(root: HTMLElement): Promise<void> {
     // 直径定規は render 後（カメラ行列が最新）に投影して配置する。
     if (rulerInfo) {
       const ext = objectScreenExtent(rulerInfo.center, rulerInfo.radiusWorld);
-      if (ext) {
+      const screenW = engine.renderer.domElement.clientWidth;
+      // 天体がビューより十分大きい（=ズームインで画面を突き抜けている）と定規の両端も
+      // ラベルも画面外に出て、正体不明の全幅線だけが残る。そういう時は定規を出さない。
+      if (ext && ext.halfW <= screenW) {
         const yPx = Math.min(ext.cy + ext.vHalf + 12, engine.renderer.domElement.clientHeight - 150); // 下部UI(発射/停止ボタン)を避ける
         ruler.update(ext.cx - ext.halfW, ext.cx + ext.halfW, yPx, rulerInfo.label);
       } else {

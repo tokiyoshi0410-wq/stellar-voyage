@@ -18,6 +18,7 @@ function fmtNum(n: number): string {
 // 縮尺バー用の光の到達時間（分を優先。小学生向けに「83分」等を保つ）。
 function lightTimeShort(au: number): string {
   const min = au * LIGHT_MIN_PER_AU;
+  if (min < 1) return `${Math.round(min * 60)}秒`; // 1分未満は秒（"0分"表示を回避）
   if (min < 90) return `${Math.round(min)}分`;
   const hours = min / 60;
   if (hours < 48) return `約${Math.round(hours)}時間`;
@@ -34,8 +35,9 @@ export function scaleBarFor(
   const rawAu = TARGET_PX / pxPerAu;
   if (rawAu < 6000) {
     const niceAu = niceRound(rawAu);
-    // toPrecision(2) は3桁以上で指数表記になる（"1.5e+2"）。固定表記に戻す（小学生向け）。
-    const okm = Number((niceAu * AU_IN_OKUKM).toPrecision(2)).toLocaleString('ja-JP');
+    // toPrecision(2) は3桁以上で指数表記になる（"1.5e+2"）。Number() で固定表記へ戻す（小学生向け）。
+    // 既定の toLocaleString は小数3桁で丸めるため、微小値（0.0075→0.008）が崩れる。桁数を広げて保つ。
+    const okm = Number((niceAu * AU_IN_OKUKM).toPrecision(2)).toLocaleString('ja-JP', { maximumFractionDigits: 8 });
     return {
       label: `${fmtNum(niceAu)} AU ≈ ${okm}億km（光で ${lightTimeShort(niceAu)}）`,
       widthPx: niceAu * pxPerAu,

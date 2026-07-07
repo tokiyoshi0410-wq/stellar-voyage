@@ -21,7 +21,9 @@ export function formatLightTime(lightMinutes: number): string {
   const min = totalSec / 60;
   if (min < 60 * 24) return `約${Math.round(min / 60)}時間`;
   if (min < 60 * 24 * 365) return `約${Math.round(min / 60 / 24)}日`;
-  return `約${(min / 60 / 24 / 365).toPrecision(2)}年`;
+  // 100年未満は有効数字2桁（"4.2年"）、以上は整数丸め＋桁区切り（toPrecision の指数表記 "1.5e+2" を回避）
+  const yr = min / 60 / 24 / 365;
+  return `約${yr < 100 ? Number(yr.toPrecision(2)) : Math.round(yr).toLocaleString('ja-JP')}年`;
 }
 
 export interface ScaleInfo {

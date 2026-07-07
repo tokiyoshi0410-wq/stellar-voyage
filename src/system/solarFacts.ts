@@ -45,9 +45,10 @@ export function earthClosestApproachAu(semiMajorAxisAu: number): number {
 export function formatManKm(au: number): string {
   const km = au * AU_KM;
   const oku = km / 1e8;
-  if (oku >= 1) return `約${Number(oku.toPrecision(2))}億km`;
-  const man = km / 1e4;
-  return `約${Math.round(man / 100) * 100}万km`;
+  const man = Math.round(km / 1e4 / 100) * 100; // 100万km 単位に丸め
+  // 100万km丸めで 10000万km(=1億km) に達する境界も億へ繰り上げ（"約10000万km" を回避）
+  if (oku >= 1 || man >= 10000) return `約${Number(oku.toPrecision(2))}億km`;
+  return `約${man}万km`;
 }
 
 /** 距離(AU)を光が進む時間（既存 formatLightTime へ委譲） */

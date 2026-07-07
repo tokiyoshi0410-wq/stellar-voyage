@@ -27,8 +27,12 @@ export class SystemScene {
   constructor(readonly system: StellarSystem) {
     this.root.add(this.travelGroup);
 
+    // 恒星球は最内惑星の軌道より小さく保つ。固定 0.3 AU だと a<0.3 のコンパクト系（実在系外惑星の
+    // 約1/4）が恒星内部に埋もれて不可視になり、クリックも恒星に横取りされる。通常系は 0.3 のまま。
+    const innermostAu = Math.min(...system.planets.map((p) => p.semiMajorAxisAu));
+    const starRadius = Math.min(0.3, Number.isFinite(innermostAu) ? innermostAu * 0.8 : 0.3);
     const star = new THREE.Mesh(
-      new THREE.SphereGeometry(0.3, 32, 24),
+      new THREE.SphereGeometry(starRadius, 32, 24),
       new THREE.MeshBasicMaterial({ color: 0xfff2cc }),
     );
     this.travelGroup.add(star);

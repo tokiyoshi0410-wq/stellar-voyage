@@ -14,6 +14,15 @@ describe('formatLightTime', () => {
     expect(formatLightTime(0.999)).toBe('1分');
     expect(formatLightTime(8.995)).toBe('9分');
   });
+  it('formats multi-century years without exponential notation', () => {
+    const minFor150yr = 150 * 365 * 24 * 60; // 旧 toPrecision(2) は "約1.5e+2年"
+    expect(formatLightTime(minFor150yr)).toBe('約150年');
+    expect(formatLightTime(minFor150yr)).not.toMatch(/e\+/);
+  });
+  it('keeps sub-century years with one significant decimal', () => {
+    const minFor4_2yr = 4.24 * 365 * 24 * 60;
+    expect(formatLightTime(minFor4_2yr)).toMatch(/約4\.2年/);
+  });
 });
 
 describe('scaleInfoFor', () => {

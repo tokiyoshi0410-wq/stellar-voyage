@@ -19,7 +19,8 @@ describe('LocalGroup', () => {
       .material.uniforms.uOpacity.value;
     expect(mwU).toBe(0.3);   // children[0] = 天の川
     expect(andU).toBe(0.7);  // children[1] = アンドロメダ
-    // 現在地マーカー(Mesh)と公転円(Line)は我々の銀河の要素なので天の川側に追従する
+    // 現在地マーカー(Mesh)と公転円(Line)は我々の銀河の要素なので天の川側に追従する。
+    // マーカーは基準1.0でそのまま、公転円は基準0.5の半透明を保ったまま milkyWay で減衰する。
     let markerOpacity: number | undefined;
     let lineOpacity: number | undefined;
     lg.object.traverse((o) => {
@@ -27,7 +28,7 @@ describe('LocalGroup', () => {
       if (o instanceof THREE.Line) lineOpacity = (o as unknown as { material: { opacity: number } }).material.opacity;
     });
     expect(markerOpacity).toBe(0.3);
-    expect(lineOpacity).toBe(0.3);
+    expect(lineOpacity).toBeCloseTo(0.15, 6); // 0.5(基準) × 0.3(milkyWay)
     lg.dispose();
   });
   it('centers Andromeda at the group origin (crossfade, not side-by-side)', () => {

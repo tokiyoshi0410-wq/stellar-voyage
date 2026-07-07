@@ -26,6 +26,11 @@ describe('solarFacts', () => {
     expect(formatManKm(0.52)).toBe('約7800万km');
     expect(formatManKm(4.2)).toMatch(/億km$/);
   });
+  it('formatManKm promotes to 億km at the rounding boundary (no "約10000万km")', () => {
+    // 0.668 AU ≈ 9993万km → 100万km丸めで10000万km になるので億へ繰り上げる
+    expect(formatManKm(0.668)).toMatch(/億km$/);
+    expect(formatManKm(0.668)).not.toMatch(/万km$/);
+  });
   it('formatShinkansenTravel gives years for planet distances', () => {
     expect(formatShinkansenTravel(0.52)).toBe('約30年');
     expect(formatShinkansenTravel(29.1)).toMatch(/約1\d{3}年/);

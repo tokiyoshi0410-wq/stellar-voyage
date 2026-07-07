@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   formatSpeed, formatDistanceLy, describeStar, formatAuDistance, starDisplayName,
+  formatLuminosity, formatLy,
 } from '../../src/ui/format';
 
 describe('formatSpeed', () => {
@@ -51,6 +52,28 @@ describe('formatAuDistance', () => {
   it('formats inner and outer planets sensibly', () => {
     expect(formatAuDistance(0.39)).toMatch(/0\.39 AU/);
     expect(formatAuDistance(30.1)).toMatch(/30 AU/);
+  });
+  it('avoids exponential notation for far planets (a > 66 AU)', () => {
+    const s = formatAuDistance(160); // 160×1.496=239.4 → 旧実装は "2.4e+2億km"
+    expect(s).not.toMatch(/e\+/);
+    expect(s).toMatch(/240億km/);
+  });
+});
+
+describe('formatLuminosity', () => {
+  it('uses comma-grouped integers for very bright stars (no exponent)', () => {
+    expect(formatLuminosity(136000)).toBe('136,000'); // デネブ級 → 旧 toPrecision(3) は "1.36e+5"
+  });
+  it('keeps ordinary luminosities readable', () => {
+    expect(formatLuminosity(1)).toBe('1');
+    expect(formatLuminosity(1.36)).toBe('1.36');
+  });
+});
+
+describe('formatLy', () => {
+  it('keeps one decimal for near stars and rounds far ones', () => {
+    expect(formatLy(4.24)).toBe('4.2 光年'); // プロキシマ（旧 Math.round は "4 光年"）
+    expect(formatLy(860)).toBe('860 光年');
   });
 });
 

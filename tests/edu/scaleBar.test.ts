@@ -35,4 +35,13 @@ describe('scaleBarFor', () => {
     expect(b.label).toMatch(/150億km/);
     expect(b.label).not.toMatch(/e\+/);
   });
+  it('shows seconds (not "光で 0分") when the light-time is under a minute', () => {
+    const b = scaleBarFor(0.05, 1000, FOV); // 最深ズーム: niceAu=0.005 → 光で ~2秒
+    expect(b.label).toMatch(/秒/);
+    expect(b.label).not.toMatch(/0分/);
+  });
+  it('keeps tiny 億km values precise (no lossy 3-fraction-digit truncation)', () => {
+    const b = scaleBarFor(0.05, 1000, FOV); // 0.005 AU × 1.496 = 0.00748 → "0.0075億km"（"0.008"に丸めない）
+    expect(b.label).toMatch(/0\.0075億km/);
+  });
 });

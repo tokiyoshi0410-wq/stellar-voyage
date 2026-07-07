@@ -45,6 +45,18 @@ describe('SystemScene', () => {
     expect(hasLine).toBe(false);
     scene.dispose();
   });
+  // 実在系外惑星の 1/4 は a<0.3 AU（最小 55 Cnc e=0.015）。固定 0.3 AU の恒星球だと
+  // それらが恒星内部に埋もれて不可視＋クリック横取りになるため、恒星は最内惑星より小さくする。
+  it('never lets the central star swallow the innermost planet orbit', () => {
+    for (const a of [0.015, 0.15, 0.39, 1]) {
+      const sys: StellarSystem = { ...system, planets: [{ ...system.planets[0]!, semiMajorAxisAu: a }] };
+      const scene = new SystemScene(sys);
+      const star = scene.root.children[0]!.children[0] as THREE.Mesh;
+      const r = (star.geometry as THREE.SphereGeometry).parameters.radius;
+      expect(r).toBeLessThan(a);
+      scene.dispose();
+    }
+  });
 });
 
 describe('SystemScene.update', () => {
